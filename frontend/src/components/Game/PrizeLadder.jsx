@@ -1,5 +1,5 @@
 import React from "react";
-import './price.css';
+import "./price.css";
 
 const PrizeLadder = ({ currentLevel, lastPrizeLevel, isGameOver, isPopup }) => {
   const prizes = [
@@ -12,12 +12,14 @@ const PrizeLadder = ({ currentLevel, lastPrizeLevel, isGameOver, isPopup }) => {
       {prizes.map((prize, index) => {
         let className = "prize-item";
 
-        if (!isGameOver && index === currentLevel && index !== 0) {
-          className += " won"; // green for current prize
+        // Highlight current prize when game is ongoing
+        if (!isGameOver && index === currentLevel) {
+          className += " won";
         }
 
-        if (isGameOver && index === lastPrizeLevel && index !== 0) {
-          className += " taken"; // yellow for taken prize
+        // Highlight last secured prize when game over
+        if (isGameOver && index === lastPrizeLevel) {
+          className += " taken";
         }
 
         return (

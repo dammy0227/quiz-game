@@ -34,60 +34,57 @@ export const startGame = async (req, res) => {
   }
 };
 
-// Submit answer
-// Submit answer
+// controllers/gameController.js
+
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
-    const game = await Game.findById(gameId);
 
-    if (!game || game.isOver)
-      return res.status(400).json({ message: "No active game found" });
+    const game = await Game.findById(gameId).populate("questions");
+    if (!game) {
+      return res.status(404).json({ message: "Game not found" });
+    }
 
-    const currentQIndex = game.currentQuestion;
-    const currentQ = game.questions[currentQIndex];
-    const isCorrect = currentQ.correctAnswer === answer;
+    const currentQIndex = game.currentQuestionIndex;
+    const currentQuestion = game.questions[currentQIndex];
 
-    currentQ.selectedAnswer = answer;
+    // Check if answer is correct
+    if (currentQuestion.answer === answer) {
+      game.currentQuestionIndex += 1;
 
-    if (isCorrect) {
-      // Prize for the question just answered
-      const earnedPrize = prizeLadder[currentQIndex + 1] || game.earnings;
-      game.earnings = earnedPrize;
-
-      // Increment question for next round
-      game.currentQuestion++;
+      // ✅ Update prize level immediately after correct answer
+      game.currentPrizeLevel = game.currentQuestionIndex;
 
       await game.save();
 
-      // If last question answered correctly, game over
-      if (game.currentQuestion >= game.questions.length) {
-        game.isOver = true;
-        await game.save();
+      if (game.currentQuestionIndex >= game.questions.length) {
         return res.json({
-          message: "🎉 You won the game!",
-          prize: earnedPrize,
-          prizeLevel: currentQIndex, // question just answered
+          isCorrect: true,
+          isGameOver: true,
+          prizeLevel: game.currentPrizeLevel,
         });
       }
 
       return res.json({
-        message: "✅ Correct!",
-        prize: earnedPrize,
-        prizeLevel: currentQIndex, // question just answered
-        nextQuestion: game.questions[game.currentQuestion],
+        isCorrect: true,
+        isGameOver: false,
+        nextQuestion: game.questions[game.currentQuestionIndex],
+        prizeLevel: game.currentPrizeLevel, // ✅ send updated prize
       });
     } else {
-      game.isOver = true;
+      // Wrong answer → game over
+      game.isGameOver = true;
       await game.save();
+
       return res.json({
-        message: "❌ Wrong answer! Game over.",
-        prize: game.earnings,
-        prizeLevel: currentQIndex,
+        isCorrect: false,
+        isGameOver: true,
+        prizeLevel: game.currentPrizeLevel, // return last reached prize
       });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Error submitting answer" });
   }
 };
 
