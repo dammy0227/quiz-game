@@ -39,61 +39,58 @@ export const startGame = async (req, res) => {
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
+
+    // 1. Find the active game
     const game = await Game.findById(gameId);
-
-    if (!game) {
-      return res.status(404).json({ message: "Game not found" });
+    if (!game || !game.isActive) {
+      return res.status(400).json({ message: "Game not found or inactive" });
     }
 
-    const currentQ = game.questions[game.currentQuestion];
-
-    if (!currentQ) {
-      return res.status(400).json({ message: "No current question found" });
+    // 2. Get the current question
+    const question = await Question.findById(
+      game.questions[game.currentQuestion]
+    );
+    if (!question) {
+      return res.status(400).json({ message: "Question not found" });
     }
 
-    const isCorrect = currentQ.correctAnswer === answer;
+    // 3. Check if answer is correct
+    const isCorrect = question.answer === answer;
 
     if (isCorrect) {
-      // Update prize
-      game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
+      // ✅ Award prize for current question
+      game.earnings = prizeLadder[game.currentQuestion] || game.earnings;
 
-      // Move to next question
+      // Move to the next question
       game.currentQuestion += 1;
+
+      // If all questions are done → game over
+      if (game.currentQuestion >= game.questions.length) {
+        game.isActive = false;
+      }
 
       await game.save();
 
-      if (game.currentQuestion < game.questions.length) {
-        return res.json({
-          correct: true,
-          message: `✅ Correct! You earned $${game.earnings}`,
-          prize: game.earnings,
-          nextQuestion: game.questions[game.currentQuestion],
-        });
-      } else {
-        // Finished all questions
-        game.isOver = true;
-        await game.save();
-
-        return res.json({
-          correct: true,
-          message: `🎉 You won the top prize: $${game.earnings}`,
-          prize: game.earnings,
-        });
-      }
+      return res.json({
+        correct: true,
+        nextQuestionId: game.questions[game.currentQuestion],
+        earnings: game.earnings,
+        gameOver: !game.isActive
+      });
     } else {
-      // Wrong answer ends the game
-      game.isOver = true;
+      // ❌ Wrong answer → game over
+      game.isActive = false;
       await game.save();
 
       return res.json({
         correct: false,
-        message: `❌ Wrong answer! You walk away with $${game.earnings}`,
-        prize: game.earnings,
+        earnings: game.earnings,
+        gameOver: true
       });
     }
   } catch (error) {
-    console.error("❌ Error in submitAnswer:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Submit answer error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
