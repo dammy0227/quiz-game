@@ -20,7 +20,15 @@ connectDB();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://quiz-game-nu-five.vercel.app", // Vercel frontend
+    "http://localhost:5173"                   // Local dev
+  ],
+  methods: ["GET", "POST"],
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(morgan("dev"));
 
