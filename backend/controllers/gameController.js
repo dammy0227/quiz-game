@@ -3,7 +3,7 @@ import { getRandomQuestions } from "../utils/randomizer.js";
 
 // Prize ladder for 10 questions
 const prizeLadder = [
-  0, 100, 200, 300, 500, 1000,
+   100, 200, 300, 500, 1000,
   2000, 4000, 8000, 16000, 32000
 ];
 

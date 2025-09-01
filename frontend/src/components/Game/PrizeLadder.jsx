@@ -3,7 +3,7 @@ import "./price.css";
 
 const PrizeLadder = ({ currentLevel, lastPrizeLevel, isGameOver, isPopup }) => {
   const prizes = [
-    "$0", "$100", "$200", "$300", "$500", "$1,000",
+     "$100", "$200", "$300", "$500", "$1,000",
     "$2,000", "$4,000", "$8,000", "$16,000", "$32,000"
   ];
 
