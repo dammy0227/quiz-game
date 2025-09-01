@@ -35,56 +35,34 @@ export const startGame = async (req, res) => {
 };
 
 // controllers/gameController.js
-
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
+    const game = await Game.findById(gameId);
 
-    const game = await Game.findById(gameId).populate("questions");
     if (!game) {
       return res.status(404).json({ message: "Game not found" });
     }
 
-    const currentQIndex = game.currentQuestionIndex;
-    const currentQuestion = game.questions[currentQIndex];
+    const currentQuestion = game.questions[game.currentQuestionIndex];
 
-    // Check if answer is correct
-    if (currentQuestion.answer === answer) {
-      game.currentQuestionIndex += 1;
-
-      // ✅ Update prize level immediately after correct answer
-      game.currentPrizeLevel = game.currentQuestionIndex;
-
-      await game.save();
-
-      if (game.currentQuestionIndex >= game.questions.length) {
-        return res.json({
-          isCorrect: true,
-          isGameOver: true,
-          prizeLevel: game.currentPrizeLevel,
-        });
-      }
-
-      return res.json({
-        isCorrect: true,
-        isGameOver: false,
-        nextQuestion: game.questions[game.currentQuestionIndex],
-        prizeLevel: game.currentPrizeLevel, // ✅ send updated prize
-      });
-    } else {
-      // Wrong answer → game over
-      game.isGameOver = true;
-      await game.save();
-
-      return res.json({
-        isCorrect: false,
-        isGameOver: true,
-        prizeLevel: game.currentPrizeLevel, // return last reached prize
-      });
+    if (!currentQuestion) {
+      return res.status(400).json({ message: "No current question found" });
     }
+
+    const isCorrect = currentQuestion.answer === answer;
+
+    if (isCorrect) {
+      game.score += 1;
+    }
+
+    game.currentQuestionIndex += 1;
+    await game.save();
+
+    res.json({ correct: isCorrect, score: game.score });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error submitting answer" });
+    console.error("❌ Error in submitAnswer:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
