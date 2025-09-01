@@ -35,6 +35,7 @@ export const startGame = async (req, res) => {
 };
 
 // controllers/gameController.js
+
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
@@ -44,27 +45,58 @@ export const submitAnswer = async (req, res) => {
       return res.status(404).json({ message: "Game not found" });
     }
 
-    const currentQuestion = game.questions[game.currentQuestionIndex];
+    const currentQ = game.questions[game.currentQuestion];
 
-    if (!currentQuestion) {
+    if (!currentQ) {
       return res.status(400).json({ message: "No current question found" });
     }
 
-    const isCorrect = currentQuestion.answer === answer;
+    const isCorrect = currentQ.correctAnswer === answer;
 
     if (isCorrect) {
-      game.score += 1;
+      // Update prize
+      game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
+
+      // Move to next question
+      game.currentQuestion += 1;
+
+      await game.save();
+
+      if (game.currentQuestion < game.questions.length) {
+        return res.json({
+          correct: true,
+          message: `✅ Correct! You earned $${game.earnings}`,
+          prize: game.earnings,
+          nextQuestion: game.questions[game.currentQuestion],
+        });
+      } else {
+        // Finished all questions
+        game.isOver = true;
+        await game.save();
+
+        return res.json({
+          correct: true,
+          message: `🎉 You won the top prize: $${game.earnings}`,
+          prize: game.earnings,
+        });
+      }
+    } else {
+      // Wrong answer ends the game
+      game.isOver = true;
+      await game.save();
+
+      return res.json({
+        correct: false,
+        message: `❌ Wrong answer! You walk away with $${game.earnings}`,
+        prize: game.earnings,
+      });
     }
-
-    game.currentQuestionIndex += 1;
-    await game.save();
-
-    res.json({ correct: isCorrect, score: game.score });
   } catch (error) {
     console.error("❌ Error in submitAnswer:", error.message);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 // Quit game
