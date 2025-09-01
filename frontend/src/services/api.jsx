@@ -2,8 +2,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // backend base URL
-  headers: { "Content-Type": "application/json" }
+  baseURL: "https://quiz-game-e4ln.onrender.com/api", // ✅ use your deployed backend
+  headers: { "Content-Type": "application/json" },
 });
 
 // Attach token to every request if available
