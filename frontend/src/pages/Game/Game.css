@@ -1,0 +1,89 @@
+.game-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  color: black; /* light text */
+  font-family: 'Arial', sans-serif;
+}
+
+.game-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.start-btn,
+.continue-btn,
+.restart-btn,
+.quit-btn {
+  padding: 10px 20px;
+  margin: 15px 0;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  background-color: #374151;
+  color: white;
+  transition: background 0.3s;
+}
+
+.start-btn:hover,
+.continue-btn:hover,
+.restart-btn:hover,
+.quit-btn:hover {
+  background-color: #1f2937;
+}
+
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #1f2937;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.popup-message {
+  margin-top: 10px;
+  font-size: 18px;
+  text-align: center;
+  color: #f9fafb;
+}
+
+.game-message {
+  margin-top: 15px;
+  font-size: 16px;
+  color: #1f2937;
+  text-align: center;
+}
+
+/* Timer */
+h3 {
+  margin-bottom: 15px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+@media (max-width: 600px) {
+  .game-page {
+    padding: 10px;
+  }
+
+  .start-btn,
+  .continue-btn,
+  .restart-btn,
+  .quit-btn {
+    width: 80%;
+    font-size: 16px;
+  }
+}

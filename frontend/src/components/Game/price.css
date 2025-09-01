@@ -1,0 +1,37 @@
+.prize-ladder {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 250px;
+  margin: 10px 0;
+}
+
+.prize-item {
+  padding: 10px;
+  margin: 3px 0;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  color: #f9fafb;
+  background-color: #1f2937;
+  transition: all 0.3s;
+}
+
+.prize-item.won {
+  background-color: #10b981; /* green highlight */
+}
+
+.prize-item.taken {
+  background-color: #f59e0b; /* yellow highlight */
+}
+
+@media (max-width: 600px) {
+  .prize-ladder {
+    max-width: 180px;
+  }
+
+  .prize-item {
+    padding: 8px;
+    font-size: 14px;
+  }
+}
