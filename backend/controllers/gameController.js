@@ -3,7 +3,7 @@ import { getRandomQuestions } from "../utils/randomizer.js";
 
 // Prize ladder for 10 questions
 const prizeLadder = [
-   100, 200, 300, 500, 1000,
+  0, 100, 200, 300, 500, 1000,
   2000, 4000, 8000, 16000, 32000
 ];
 
@@ -39,58 +39,61 @@ export const startGame = async (req, res) => {
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
-
-    // 1. Find the active game
     const game = await Game.findById(gameId);
-    if (!game || !game.isActive) {
-      return res.status(400).json({ message: "Game not found or inactive" });
+
+    if (!game) {
+      return res.status(404).json({ message: "Game not found" });
     }
 
-    // 2. Get the current question
-    const question = await Question.findById(
-      game.questions[game.currentQuestion]
-    );
-    if (!question) {
-      return res.status(400).json({ message: "Question not found" });
+    const currentQ = game.questions[game.currentQuestion];
+
+    if (!currentQ) {
+      return res.status(400).json({ message: "No current question found" });
     }
 
-    // 3. Check if answer is correct
-    const isCorrect = question.answer === answer;
+    const isCorrect = currentQ.correctAnswer === answer;
 
     if (isCorrect) {
-      // ✅ Award prize for current question
-      game.earnings = prizeLadder[game.currentQuestion] || game.earnings;
+      // Update prize
+      game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
 
-      // Move to the next question
+      // Move to next question
       game.currentQuestion += 1;
-
-      // If all questions are done → game over
-      if (game.currentQuestion >= game.questions.length) {
-        game.isActive = false;
-      }
 
       await game.save();
 
-      return res.json({
-        correct: true,
-        nextQuestionId: game.questions[game.currentQuestion],
-        earnings: game.earnings,
-        gameOver: !game.isActive
-      });
+      if (game.currentQuestion < game.questions.length) {
+        return res.json({
+          correct: true,
+          message: `✅ Correct! You earned $${game.earnings}`,
+          prize: game.earnings,
+          nextQuestion: game.questions[game.currentQuestion],
+        });
+      } else {
+        // Finished all questions
+        game.isOver = true;
+        await game.save();
+
+        return res.json({
+          correct: true,
+          message: `🎉 You won the top prize: $${game.earnings}`,
+          prize: game.earnings,
+        });
+      }
     } else {
-      // ❌ Wrong answer → game over
-      game.isActive = false;
+      // Wrong answer ends the game
+      game.isOver = true;
       await game.save();
 
       return res.json({
         correct: false,
-        earnings: game.earnings,
-        gameOver: true
+        message: `❌ Wrong answer! You walk away with $${game.earnings}`,
+        prize: game.earnings,
       });
     }
   } catch (error) {
-    console.error("Submit answer error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Error in submitAnswer:", error.message);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
