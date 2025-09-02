@@ -46,7 +46,6 @@ export const submitAnswer = async (req, res) => {
     }
 
     const currentQ = game.questions[game.currentQuestion];
-
     if (!currentQ) {
       return res.status(400).json({ message: "No current question found" });
     }
@@ -56,10 +55,7 @@ export const submitAnswer = async (req, res) => {
     if (isCorrect) {
       // Update prize
       game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
-
-      // Move to next question
       game.currentQuestion += 1;
-
       await game.save();
 
       if (game.currentQuestion < game.questions.length) {
@@ -67,7 +63,8 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `✅ Correct! You earned $${game.earnings}`,
           prize: game.earnings,
-          explanation: currentQ.explanation, // Show why the answer was correct
+          correctAnswer: currentQ.correctAnswer, // ✅ Always send
+          explanation: currentQ.explanation,
           nextQuestion: game.questions[game.currentQuestion],
         });
       } else {
@@ -79,6 +76,7 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `🎉 You won the top prize: $${game.earnings}`,
           prize: game.earnings,
+          correctAnswer: currentQ.correctAnswer, // ✅ Always send
           explanation: currentQ.explanation,
         });
       }
@@ -91,8 +89,8 @@ export const submitAnswer = async (req, res) => {
         correct: false,
         message: `❌ Wrong answer! You walk away with $${game.earnings}`,
         prize: game.earnings,
-        explanation: currentQ.explanation, // Show why the correct answer was right
-        correctAnswer: currentQ.correctAnswer,
+        correctAnswer: currentQ.correctAnswer, // ✅ Always send
+        explanation: currentQ.explanation,
       });
     }
   } catch (error) {
@@ -100,6 +98,7 @@ export const submitAnswer = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 
@@ -191,15 +190,21 @@ export const getActiveGame = async (req, res) => {
     const userId = req.user.id;
     const game = await Game.findOne({ user: userId, isOver: false });
 
-    if (!game) return res.status(404).json({ message: "No active game found" });
+    if (!game) {
+      return res.status(404).json({ message: "No active game found" });
+    }
+
+    const currentQ = game.questions[game.currentQuestion] || null;
 
     res.json({
       gameId: game._id,
-      currentQuestion: game.questions[game.currentQuestion],
+      currentQuestion: currentQ,
       currentLevel: game.currentQuestion,
       prize: game.earnings,
       usedLifelines: game.lifelines,
-      timer: 30 // optional: default or saved timer if you want
+      correctAnswer: currentQ ? currentQ.correctAnswer : "", // ✅ Added
+      explanation: currentQ ? currentQ.explanation : "",     // ✅ Added
+      timer: 30 // You can replace with actual saved timer if needed
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
