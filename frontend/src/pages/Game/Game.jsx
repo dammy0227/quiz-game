@@ -121,8 +121,8 @@ const handleAnswer = async (answer) => {
     const data = await submitAnswer(gameId, answer);
 
     setMessage(data.message);
-    setCorrectAnswer(data.correctAnswer || ""); // keep previous behavior
-    setExplanation(data.explanation || "Not provided."); // ✅ Default text if missing
+    setCorrectAnswer(data.correctAnswer || "");
+    setExplanation(data.explanation || "Not provided."); // ✅ ALWAYS set explanation
 
     if (data.nextQuestion) {
       setPrize(data.prize);
