@@ -7,7 +7,7 @@ import {
   submitAnswer,
   callLifeline,
   quitGame,
-  getActiveGame
+  getActiveGame,
 } from "../../services/gameService";
 import "./Game.css";
 
@@ -18,7 +18,8 @@ const Game = () => {
   const [lastPrizeLevel, setLastPrizeLevel] = useState(0);
   const [prize, setPrize] = useState(0);
   const [message, setMessage] = useState("");
-  const [explanation, setExplanation] = useState(""); // ⬅️ NEW
+  const [explanation, setExplanation] = useState("");
+  const [correctAnswer, setCorrectAnswer] = useState(""); // ⬅️ NEW
   const [isGameOver, setIsGameOver] = useState(false);
   const [timer, setTimer] = useState(30);
   const [showPrizePopup, setShowPrizePopup] = useState(false);
@@ -51,7 +52,8 @@ const Game = () => {
           });
           setTimer(data.timer || 30);
           setMessage(data.message || "");
-          setExplanation(data.explanation || ""); // ⬅️ Restore explanation if resuming
+          setExplanation(data.explanation || "");
+          setCorrectAnswer(data.correctAnswer || ""); // ⬅️ restore correctAnswer
           setIsGameOver(data.isGameOver || false);
           setShowPrizePopup(data.showPrizePopup || false);
           setGameStarted(true);
@@ -97,7 +99,8 @@ const Game = () => {
       setTimer(30);
       setUsedLifelines({ fiftyFifty: false, askAudience: false });
       setMessage("");
-      setExplanation(""); // ⬅️ reset explanation
+      setExplanation("");
+      setCorrectAnswer(""); // reset correctAnswer
       setIsGameOver(false);
       setShowPrizePopup(false);
       setGameStarted(true);
@@ -113,7 +116,8 @@ const Game = () => {
     try {
       const data = await submitAnswer(gameId, answer);
       setMessage(data.message);
-      setExplanation(data.explanation || ""); // ⬅️ store explanation
+      setExplanation(data.explanation || "");
+      setCorrectAnswer(data.correctAnswer || ""); // ⬅️ store correct answer
 
       if (data.nextQuestion) {
         setPrize(data.prize);
@@ -127,7 +131,8 @@ const Game = () => {
           setCurrentLevel((prev) => prev + 1);
           setTimer(30);
           setMessage("");
-          setExplanation(""); // clear explanation for next question
+          setExplanation("");
+          setCorrectAnswer("");
         }, 1500);
       } else {
         // Game over
@@ -161,7 +166,8 @@ const Game = () => {
       setLastPrizeLevel(currentLevel);
       setShowPrizePopup(true);
       setMessage(`You quit. You walk away with $${data.prize}`);
-      setExplanation(""); // ⬅️ clear explanation on quit
+      setExplanation("");
+      setCorrectAnswer("");
       wrongSound.play().catch((err) => console.log("Sound error:", err));
     } catch (error) {
       console.error("Error quitting game:", error);
@@ -221,7 +227,15 @@ const Game = () => {
             isGameOver={isGameOver}
           />
           <p className="popup-message">{message}</p>
-          {explanation && <p className="explanation">💡 {explanation}</p>} {/* ⬅️ show explanation */}
+
+          {/* ✅ Show correct answer + explanation when game is over */}
+          {isGameOver && correctAnswer && (
+            <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
+          )}
+          {isGameOver && explanation && (
+            <p className="explanation">💡 {explanation}</p>
+          )}
+
           {!isGameOver && (
             <button
               className="continue-btn"
