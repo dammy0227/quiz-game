@@ -9,6 +9,7 @@ const gameSchema = new mongoose.Schema(
         options: [String],
         correctAnswer: String,
         selectedAnswer: String,
+        explanation: String,  // <-- ADD THIS
       },
     ],
     currentQuestion: { type: Number, default: 0 },

@@ -115,50 +115,50 @@ const Game = () => {
   };
 
   // === Handle answer submission ===
-  const handleAnswer = async (answer) => {
-    if (!gameId) return;
-    try {
-      const data = await submitAnswer(gameId, answer);
-      setMessage(data.message);
-      setCorrectAnswer(data.correctAnswer || "");
-      setExplanation(data.explanation || "");
+const handleAnswer = async (answer) => {
+  if (!gameId) return;
+  try {
+    const data = await submitAnswer(gameId, answer);
 
-      if (data.nextQuestion) {
-        setPrize(data.prize);
-        setShowPrizePopup(true);
-        setLastPrizeLevel(currentLevel);
-        correctSound.play().catch((err) => console.log("Sound error:", err));
+    setMessage(data.message);
+    setCorrectAnswer(data.correctAnswer || ""); // keep previous behavior
+    setExplanation(data.explanation || "Not provided."); // ✅ Default text if missing
 
-        setTimeout(() => {
-          setShowPrizePopup(false);
-          setCurrentQuestion(data.nextQuestion);
-          setCurrentLevel((prev) => prev + 1);
-          setTimer(30);
-          setMessage("");
-          setCorrectAnswer("");
-          setExplanation("");
-        }, 1500);
-      } else {
-        // Game over
-        setPrize(data.prize);
-        setIsGameOver(true);
-        setLastPrizeLevel(currentLevel);
-        setShowPrizePopup(true);
+    if (data.nextQuestion) {
+      setPrize(data.prize);
+      setShowPrizePopup(true);
+      setLastPrizeLevel(currentLevel);
+      correctSound.play().catch((err) => console.log("Sound error:", err));
 
-        const isWin = data.message.includes("won");
-        setMessage(
-          isWin
-            ? `🎉 Congratulations! You won the full prize: $${data.prize}`
-            : `❌ Wrong answer! You walk away with $${data.prize}`
-        );
-
-        const sound = isWin ? winSound : wrongSound;
-        sound.play().catch((err) => console.log("Sound error:", err));
-      }
-    } catch (error) {
-      console.error("Error submitting answer:", error);
+      setTimeout(() => {
+        setShowPrizePopup(false);
+        setCurrentQuestion(data.nextQuestion);
+        setCurrentLevel((prev) => prev + 1);
+        setTimer(30);
+        setMessage("");
+        setCorrectAnswer("");
+        setExplanation(""); // reset for next question
+      }, 1500);
+    } else {
+      // Game over
+      setPrize(data.prize);
+      setIsGameOver(true);
+      setLastPrizeLevel(currentLevel);
+      setShowPrizePopup(true);
+      const isWin = data.message.includes("won");
+      setMessage(
+        isWin
+          ? `🎉 Congratulations! You won the full prize: $${data.prize}`
+          : `❌ Wrong answer! You walk away with $${data.prize}`
+      );
+      const sound = isWin ? winSound : wrongSound;
+      sound.play().catch((err) => console.log("Sound error:", err));
     }
-  };
+  } catch (error) {
+    console.error("Error submitting answer:", error);
+  }
+};
+
 
   // === Quit game ===
   const handleQuit = async () => {
@@ -221,40 +221,41 @@ const Game = () => {
 
   return (
     <div className="game-page">
-      {showPrizePopup && (
-        <div className="popup">
-          <PrizeLadder
-            currentLevel={currentLevel}
-            lastPrizeLevel={lastPrizeLevel}
-            isGameOver={isGameOver}
-          />
-          <p className="popup-message">{message}</p>
+{showPrizePopup && (
+  <div className="popup">
+    <PrizeLadder
+      currentLevel={currentLevel}
+      lastPrizeLevel={lastPrizeLevel}
+      isGameOver={isGameOver}
+    />
 
-          {correctAnswer && (
-            <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
-          )}
-          {explanation && (
-            <p className="explanation">💡 Explanation: {explanation}</p>
-          )}
+    <p className="popup-message">{message}</p>
 
-          {!isGameOver && (
-            <button
-              className="continue-btn"
-              onClick={() => setShowPrizePopup(false)}
-            >
-              Continue
-            </button>
-          )}
-          {isGameOver && (
-            <button
-              className="restart-btn"
-              onClick={initGame}
-            >
-              Restart Game
-            </button>
-          )}
-        </div>
-      )}
+    {correctAnswer && (
+      <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
+    )}
+
+    <p className="explanation">
+      💡 Explanation: {explanation || "Not provided."}
+    </p>
+
+    {!isGameOver && (
+      <button
+        className="continue-btn"
+        onClick={() => setShowPrizePopup(false)}
+      >
+        Continue
+      </button>
+    )}
+
+    {isGameOver && (
+      <button className="restart-btn" onClick={initGame}>
+        Restart Game
+      </button>
+    )}
+  </div>
+)}
+
 
       {!isGameOver && !showPrizePopup && (
         <div className="game-content">
