@@ -9,13 +9,20 @@ const gameSchema = new mongoose.Schema(
         options: [String],
         correctAnswer: String,
         selectedAnswer: String,
-        explanation: String,  // <-- ADD THIS
+        explanation: String,  // ✅ Make sure this field exists
+        category: String      // ✅ Also add category if needed
       },
     ],
     currentQuestion: { type: Number, default: 0 },
-    earnings: { type: Number, default: 0 }, // current winnings
+    earnings: { type: Number, default: 0 },
     isOver: { type: Boolean, default: false },
     walkedAway: { type: Boolean, default: false },
+    lifelines: {
+      fiftyFifty: { type: Boolean, default: true },
+      phoneAFriend: { type: Boolean, default: true },
+      askAudience: { type: Boolean, default: true },
+      skip: { type: Boolean, default: true },
+    },
   },
   { timestamps: true }
 );

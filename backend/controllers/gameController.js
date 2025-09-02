@@ -13,9 +13,18 @@ export const startGame = async (req, res) => {
     const userId = req.user.id;
     const questions = await getRandomQuestions(10);
 
+    // Make sure we're copying ALL question fields including explanation
+    const gameQuestions = questions.map(q => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation, // ✅ Ensure this is copied
+      category: q.category // ✅ Copy category too if needed
+    }));
+
     const game = await Game.create({
       user: userId,
-      questions,
+      questions: gameQuestions, // Use the mapped questions with all fields
       currentQuestion: 0,
       earnings: 0,
       isOver: false,
@@ -28,7 +37,11 @@ export const startGame = async (req, res) => {
       },
     });
 
-    res.json({ message: "Game started", gameId: game._id, firstQuestion: questions[0] });
+    res.json({ 
+      message: "Game started", 
+      gameId: game._id, 
+      firstQuestion: gameQuestions[0] // Return the first question with explanation
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -27,7 +27,7 @@ const Game = () => {
   });
   const [gameStarted, setGameStarted] = useState(false);
 
-  // ✅ Added states for correct answer & explanation
+  // ✅ States for correct answer & explanation
   const [correctAnswer, setCorrectAnswer] = useState("");
   const [explanation, setExplanation] = useState("");
 
@@ -76,7 +76,7 @@ const Game = () => {
     setIsGameOver(true);
     setLastPrizeLevel(currentLevel);
     setShowPrizePopup(true);
-    setMessage(`❌ Wrong answer! You walk away with $${prize}`);
+    setMessage(`❌ Time's up! You walk away with $${prize}`);
     wrongSound.play().catch((err) => console.log("Sound error:", err));
   }, [prize, currentLevel, wrongSound]);
 
@@ -115,50 +115,57 @@ const Game = () => {
   };
 
   // === Handle answer submission ===
-const handleAnswer = async (answer) => {
-  if (!gameId) return;
-  try {
-    const data = await submitAnswer(gameId, answer);
+  const handleAnswer = async (answer) => {
+    if (!gameId) return;
+    try {
+      console.log("Submitting answer:", answer);
+      const data = await submitAnswer(gameId, answer);
+      console.log("Response data:", data); // Debug the response
 
-    setMessage(data.message);
-    setCorrectAnswer(data.correctAnswer || "");
-    setExplanation(data.explanation || "Not provided."); // ✅ ALWAYS set explanation
+      // ✅ ALWAYS set these values from the response
+      setMessage(data.message || "");
+      setCorrectAnswer(data.correctAnswer || "");
+      setExplanation(data.explanation || "No explanation provided.");
 
-    if (data.nextQuestion) {
-      setPrize(data.prize);
-      setShowPrizePopup(true);
-      setLastPrizeLevel(currentLevel);
-      correctSound.play().catch((err) => console.log("Sound error:", err));
+      if (data.nextQuestion) {
+        // Correct answer, game continues
+        setPrize(data.prize || 0);
+        setShowPrizePopup(true);
+        setLastPrizeLevel(currentLevel);
+        correctSound.play().catch((err) => console.log("Sound error:", err));
 
-      setTimeout(() => {
-        setShowPrizePopup(false);
-        setCurrentQuestion(data.nextQuestion);
-        setCurrentLevel((prev) => prev + 1);
-        setTimer(30);
-        setMessage("");
-        setCorrectAnswer("");
-        setExplanation(""); // reset for next question
-      }, 1500);
-    } else {
-      // Game over
-      setPrize(data.prize);
-      setIsGameOver(true);
-      setLastPrizeLevel(currentLevel);
-      setShowPrizePopup(true);
-      const isWin = data.message.includes("won");
-      setMessage(
-        isWin
-          ? `🎉 Congratulations! You won the full prize: $${data.prize}`
-          : `❌ Wrong answer! You walk away with $${data.prize}`
-      );
-      const sound = isWin ? winSound : wrongSound;
-      sound.play().catch((err) => console.log("Sound error:", err));
+        setTimeout(() => {
+          setShowPrizePopup(false);
+          setCurrentQuestion(data.nextQuestion);
+          setCurrentLevel((prev) => prev + 1);
+          setTimer(30);
+          setMessage("");
+          setCorrectAnswer("");
+          setExplanation("");
+        }, 1500);
+      } else {
+        // Game over (win or lose)
+        setPrize(data.prize || 0);
+        setIsGameOver(true);
+        setLastPrizeLevel(currentLevel);
+        setShowPrizePopup(true);
+        
+        // Use the correct flag from backend instead of message parsing
+        const isWin = data.correct === true;
+        setMessage(
+          isWin
+            ? `🎉 Congratulations! You won the full prize: $${data.prize}`
+            : `❌ Wrong answer! You walk away with $${data.prize}`
+        );
+        
+        const sound = isWin ? winSound : wrongSound;
+        sound.play().catch((err) => console.log("Sound error:", err));
+      }
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+      setMessage("Error submitting answer. Please try again.");
     }
-  } catch (error) {
-    console.error("Error submitting answer:", error);
-  }
-};
-
+  };
 
   // === Quit game ===
   const handleQuit = async () => {
@@ -209,10 +216,10 @@ const handleAnswer = async (answer) => {
   if (!gameStarted)
     return (
       <div className="game-page">
-        <h2>Prize Ladder</h2>
+        <h2>Cybersecurity Quiz Game</h2>
         <PrizeLadder currentLevel={0} lastPrizeLevel={0} isGameOver={false} />
         <button className="start-btn" onClick={initGame}>
-          Continue
+          Start New Game
         </button>
       </div>
     );
@@ -221,58 +228,64 @@ const handleAnswer = async (answer) => {
 
   return (
     <div className="game-page">
-{showPrizePopup && (
-  <div className="popup">
-    <PrizeLadder
-      currentLevel={currentLevel}
-      lastPrizeLevel={lastPrizeLevel}
-      isGameOver={isGameOver}
-    />
+      {showPrizePopup && (
+        <div className="popup">
+          <PrizeLadder
+            currentLevel={currentLevel}
+            lastPrizeLevel={lastPrizeLevel}
+            isGameOver={isGameOver}
+          />
 
-    <p className="popup-message">{message}</p>
+          <p className="popup-message">{message}</p>
 
-    {correctAnswer && (
-      <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
-    )}
+          {correctAnswer && (
+            <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
+          )}
 
-    <p className="explanation">
-      💡 Explanation: {explanation || "Not provided."}
-    </p>
+          <p className="explanation">
+            💡 Explanation: {explanation}
+          </p>
 
-    {!isGameOver && (
-      <button
-        className="continue-btn"
-        onClick={() => setShowPrizePopup(false)}
-      >
-        Continue
-      </button>
-    )}
+          {!isGameOver && (
+            <button
+              className="continue-btn"
+              onClick={() => setShowPrizePopup(false)}
+            >
+              Continue
+            </button>
+          )}
 
-    {isGameOver && (
-      <button className="restart-btn" onClick={initGame}>
-        Restart Game
-      </button>
-    )}
-  </div>
-)}
-
+          {isGameOver && (
+            <button className="restart-btn" onClick={initGame}>
+              Play Again
+            </button>
+          )}
+        </div>
+      )}
 
       {!isGameOver && !showPrizePopup && (
         <div className="game-content">
-          <h3>Time Remaining: {timer}s</h3>
+          <div className="game-header">
+            <h3>Time Remaining: {timer}s</h3>
+            <div className="prize-display">Current Prize: ${prize}</div>
+          </div>
+          
           <QuestionCard
             question={currentQuestion.question}
             options={currentQuestion.options}
             onAnswer={handleAnswer}
           />
+          
           <Lifeline
             onFiftyFifty={() => handleLifeline("fiftyFifty")}
             onAskAudience={() => handleLifeline("askAudience")}
             usedLifelines={usedLifelines}
           />
+          
           <button className="quit-btn" onClick={handleQuit}>
-            Quit
+            Quit Game
           </button>
+          
           {message && <p className="game-message">{message}</p>}
         </div>
       )}
