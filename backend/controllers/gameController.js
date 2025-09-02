@@ -183,16 +183,12 @@ export const useLifeline = async (req, res) => {
   }
 };
 
-
-// controllers/gameController.js
 export const getActiveGame = async (req, res) => {
   try {
     const userId = req.user.id;
     const game = await Game.findOne({ user: userId, isOver: false });
 
-    if (!game) {
-      return res.status(404).json({ message: "No active game found" });
-    }
+    if (!game) return res.status(404).json({ message: "No active game found" });
 
     const currentQ = game.questions[game.currentQuestion] || null;
 
@@ -202,9 +198,9 @@ export const getActiveGame = async (req, res) => {
       currentLevel: game.currentQuestion,
       prize: game.earnings,
       usedLifelines: game.lifelines,
-      correctAnswer: currentQ ? currentQ.correctAnswer : "", // ✅ Added
-      explanation: currentQ ? currentQ.explanation : "",     // ✅ Added
-      timer: 30 // You can replace with actual saved timer if needed
+      correctAnswer: currentQ ? currentQ.correctAnswer : "",
+      explanation: currentQ ? currentQ.explanation : "",
+      timer: 30
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

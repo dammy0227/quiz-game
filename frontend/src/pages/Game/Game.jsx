@@ -27,10 +27,14 @@ const Game = () => {
   });
   const [gameStarted, setGameStarted] = useState(false);
 
+  // ✅ Added states for correct answer & explanation
+  const [correctAnswer, setCorrectAnswer] = useState("");
+  const [explanation, setExplanation] = useState("");
+
   // === AUDIO FILES ===
-const correctSound = useMemo(() => new Audio("/clap.wav"), []);
-const wrongSound = useMemo(() => new Audio("/fail.wav"), []);
-const winSound = useMemo(() => new Audio("/win.wav"), []);
+  const correctSound = useMemo(() => new Audio("/clap.wav"), []);
+  const wrongSound = useMemo(() => new Audio("/fail.wav"), []);
+  const winSound = useMemo(() => new Audio("/win.wav"), []);
 
   // === Resume active game ===
   useEffect(() => {
@@ -52,6 +56,8 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
           setMessage(data.message || "");
           setIsGameOver(data.isGameOver || false);
           setShowPrizePopup(data.showPrizePopup || false);
+          setCorrectAnswer(data.correctAnswer || "");
+          setExplanation(data.explanation || "");
 
           // ✅ Mark game as started after restoring state
           setGameStarted(true);
@@ -97,6 +103,8 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
       setTimer(30);
       setUsedLifelines({ fiftyFifty: false, askAudience: false });
       setMessage("");
+      setCorrectAnswer("");
+      setExplanation("");
       setIsGameOver(false);
       setShowPrizePopup(false);
       setGameStarted(true);
@@ -112,6 +120,8 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
     try {
       const data = await submitAnswer(gameId, answer);
       setMessage(data.message);
+      setCorrectAnswer(data.correctAnswer || "");
+      setExplanation(data.explanation || "");
 
       if (data.nextQuestion) {
         setPrize(data.prize);
@@ -125,6 +135,8 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
           setCurrentLevel((prev) => prev + 1);
           setTimer(30);
           setMessage("");
+          setCorrectAnswer("");
+          setExplanation("");
         }, 1500);
       } else {
         // Game over
@@ -217,6 +229,14 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
             isGameOver={isGameOver}
           />
           <p className="popup-message">{message}</p>
+
+          {correctAnswer && (
+            <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
+          )}
+          {explanation && (
+            <p className="explanation">💡 Explanation: {explanation}</p>
+          )}
+
           {!isGameOver && (
             <button
               className="continue-btn"
