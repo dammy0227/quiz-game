@@ -18,6 +18,7 @@ const Game = () => {
   const [lastPrizeLevel, setLastPrizeLevel] = useState(0);
   const [prize, setPrize] = useState(0);
   const [message, setMessage] = useState("");
+  const [explanation, setExplanation] = useState(""); // ⬅️ NEW
   const [isGameOver, setIsGameOver] = useState(false);
   const [timer, setTimer] = useState(30);
   const [showPrizePopup, setShowPrizePopup] = useState(false);
@@ -28,9 +29,9 @@ const Game = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
   // === AUDIO FILES ===
-const correctSound = useMemo(() => new Audio("/clap.wav"), []);
-const wrongSound = useMemo(() => new Audio("/fail.wav"), []);
-const winSound = useMemo(() => new Audio("/win.wav"), []);
+  const correctSound = useMemo(() => new Audio("/clap.wav"), []);
+  const wrongSound = useMemo(() => new Audio("/fail.wav"), []);
+  const winSound = useMemo(() => new Audio("/win.wav"), []);
 
   // === Resume active game ===
   useEffect(() => {
@@ -50,10 +51,9 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
           });
           setTimer(data.timer || 30);
           setMessage(data.message || "");
+          setExplanation(data.explanation || ""); // ⬅️ Restore explanation if resuming
           setIsGameOver(data.isGameOver || false);
           setShowPrizePopup(data.showPrizePopup || false);
-
-          // ✅ Mark game as started after restoring state
           setGameStarted(true);
         }
       } catch (error) {
@@ -97,6 +97,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
       setTimer(30);
       setUsedLifelines({ fiftyFifty: false, askAudience: false });
       setMessage("");
+      setExplanation(""); // ⬅️ reset explanation
       setIsGameOver(false);
       setShowPrizePopup(false);
       setGameStarted(true);
@@ -112,6 +113,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
     try {
       const data = await submitAnswer(gameId, answer);
       setMessage(data.message);
+      setExplanation(data.explanation || ""); // ⬅️ store explanation
 
       if (data.nextQuestion) {
         setPrize(data.prize);
@@ -125,6 +127,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
           setCurrentLevel((prev) => prev + 1);
           setTimer(30);
           setMessage("");
+          setExplanation(""); // clear explanation for next question
         }, 1500);
       } else {
         // Game over
@@ -158,6 +161,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
       setLastPrizeLevel(currentLevel);
       setShowPrizePopup(true);
       setMessage(`You quit. You walk away with $${data.prize}`);
+      setExplanation(""); // ⬅️ clear explanation on quit
       wrongSound.play().catch((err) => console.log("Sound error:", err));
     } catch (error) {
       console.error("Error quitting game:", error);
@@ -217,6 +221,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
             isGameOver={isGameOver}
           />
           <p className="popup-message">{message}</p>
+          {explanation && <p className="explanation">💡 {explanation}</p>} {/* ⬅️ show explanation */}
           {!isGameOver && (
             <button
               className="continue-btn"
@@ -226,10 +231,7 @@ const winSound = useMemo(() => new Audio("/win.wav"), []);
             </button>
           )}
           {isGameOver && (
-            <button
-              className="restart-btn"
-              onClick={initGame}
-            >
+            <button className="restart-btn" onClick={initGame}>
               Restart Game
             </button>
           )}

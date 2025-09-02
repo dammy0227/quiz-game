@@ -67,6 +67,7 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `✅ Correct! You earned $${game.earnings}`,
           prize: game.earnings,
+          explanation: currentQ.explanation, // Show why the answer was correct
           nextQuestion: game.questions[game.currentQuestion],
         });
       } else {
@@ -78,6 +79,7 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `🎉 You won the top prize: $${game.earnings}`,
           prize: game.earnings,
+          explanation: currentQ.explanation,
         });
       }
     } else {
@@ -89,6 +91,8 @@ export const submitAnswer = async (req, res) => {
         correct: false,
         message: `❌ Wrong answer! You walk away with $${game.earnings}`,
         prize: game.earnings,
+        explanation: currentQ.explanation, // Show why the correct answer was right
+        correctAnswer: currentQ.correctAnswer,
       });
     }
   } catch (error) {
@@ -96,6 +100,7 @@ export const submitAnswer = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 

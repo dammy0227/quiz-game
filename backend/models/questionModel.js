@@ -4,6 +4,7 @@ const questionSchema = new mongoose.Schema({
   question: { type: String, required: true },
   options: [{ type: String, required: true }], // Multiple-choice options
   correctAnswer: { type: String, required: true }, // Must match one option
+  explanation: { type: String, required: true }, // New field for learning feedback
   category: { type: String, default: "Cybersecurity" }
 });
 
