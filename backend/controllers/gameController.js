@@ -63,6 +63,15 @@ export const submitAnswer = async (req, res) => {
       return res.status(400).json({ message: "No current question found" });
     }
 
+    // ✅ ADD DEBUG LOG HERE
+    console.log("DEBUG - Current Question Data:", {
+      question: currentQ.question,
+      correctAnswer: currentQ.correctAnswer,
+      hasExplanation: !!currentQ.explanation,
+      explanation: currentQ.explanation,
+      allFields: Object.keys(currentQ)
+    });
+
     const isCorrect = currentQ.correctAnswer === answer;
 
     if (isCorrect) {
@@ -76,7 +85,7 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `✅ Correct! You earned $${game.earnings}`,
           prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer, // ✅ Always send
+          correctAnswer: currentQ.correctAnswer,
           explanation: currentQ.explanation,
           nextQuestion: game.questions[game.currentQuestion],
         });
@@ -89,7 +98,7 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `🎉 You won the top prize: $${game.earnings}`,
           prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer, // ✅ Always send
+          correctAnswer: currentQ.correctAnswer,
           explanation: currentQ.explanation,
         });
       }
@@ -102,7 +111,7 @@ export const submitAnswer = async (req, res) => {
         correct: false,
         message: `❌ Wrong answer! You walk away with $${game.earnings}`,
         prize: game.earnings,
-        correctAnswer: currentQ.correctAnswer, // ✅ Always send
+        correctAnswer: currentQ.correctAnswer,
         explanation: currentQ.explanation,
       });
     }
@@ -111,7 +120,6 @@ export const submitAnswer = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 
 // Quit game
