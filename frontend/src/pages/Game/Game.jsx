@@ -37,39 +37,29 @@ const Game = () => {
   const winSound = useMemo(() => new Audio("/win.wav"), []);
 
   // === Resume active game ===
-  useEffect(() => {
-    const loadActiveGame = async () => {
-      try {
-        const data = await getActiveGame();
+ useEffect(() => {
+  const loadActiveGame = async () => {
+    try {
+      const data = await getActiveGame();
+      if (data && data.currentQuestion) {
+        setGameId(data.gameId);
+        setCurrentQuestion(data.currentQuestion);
+        setCurrentLevel(data.currentLevel);
+        setPrize(data.prize);
+        setUsedLifelines(data.usedLifelines);
+        setTimer(data.timer || 30);
+        setGameStarted(true);
 
-        if (data && data.currentQuestion) {
-          setGameId(data.gameId || null);
-          setCurrentQuestion(data.currentQuestion || null);
-          setCurrentLevel(data.currentLevel || 0);
-          setLastPrizeLevel(data.lastPrizeLevel || 0);
-          setPrize(data.prize || 0);
-          setUsedLifelines({
-            fiftyFifty: data.usedLifelines?.fiftyFifty || false,
-            askAudience: data.usedLifelines?.askAudience || false,
-          });
-          setTimer(data.timer || 30);
-          setMessage(data.message || "");
-          setIsGameOver(data.isGameOver || false);
-          setShowPrizePopup(data.showPrizePopup || false);
-          setCorrectAnswer(data.correctAnswer || "");
-          setExplanation(data.explanation || "");
-
-          // ✅ Mark game as started after restoring state
-          setGameStarted(true);
-        }
-      } catch (error) {
-        console.log("No active game:", error.message);
-        setGameStarted(false);
+        correctSound.play().catch((err) => console.log("Sound error:", err));
       }
-    };
+    } catch (error) {
+      console.log("No active game:", error.message);
+      setGameStarted(false); // fallback to initial screen
+    }
+  };
 
-    loadActiveGame();
-  }, []);
+  loadActiveGame();
+}, []);
 
   // === Handle wrong answer ===
   const handleWrongAnswer = useCallback(() => {

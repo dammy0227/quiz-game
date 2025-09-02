@@ -87,3 +87,12 @@ h3 {
     font-size: 16px;
   }
 }
+
+
+.correct-answer,
+.explanation {
+  color: yellow; /* same white color as popup text */
+  margin-top: 10px;
+  text-align: center;
+  font-size: 16px;
+}

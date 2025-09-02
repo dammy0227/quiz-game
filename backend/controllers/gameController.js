@@ -204,25 +204,31 @@ export const useLifeline = async (req, res) => {
 
 
 // controllers/gameController.js
+// controllers/gameController.js
 export const getActiveGame = async (req, res) => {
   try {
     const userId = req.user.id;
     const game = await Game.findOne({ user: userId, isOver: false });
+    if (!game) return res.status(404).json({ message: "No active game" });
 
-    if (!game) return res.status(404).json({ message: "No active game found" });
+    const currentQIndex = game.currentQuestion;
 
     res.json({
       gameId: game._id,
-      currentQuestion: game.questions[game.currentQuestion],
-      currentLevel: game.currentQuestion,
+      currentQuestion: game.questions[currentQIndex],
+      currentLevel: currentQIndex,
       prize: game.earnings,
-      usedLifelines: game.lifelines,
-      timer: 30 // optional: default or saved timer if you want
+      usedLifelines: {
+        fiftyFifty: !game.lifelines.fiftyFifty,
+        askAudience: !game.lifelines.askAudience
+      },
+      timer: 30, // initial timer (optional)
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
