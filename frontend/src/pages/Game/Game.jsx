@@ -59,7 +59,7 @@ const Game = () => {
   };
 
   loadActiveGame();
-}, []);
+}, [correctSound]);
 
   // === Handle wrong answer ===
   const handleWrongAnswer = useCallback(() => {
