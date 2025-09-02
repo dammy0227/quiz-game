@@ -13,9 +13,16 @@ export const startGame = async (req, res) => {
     const userId = req.user.id;
     const questions = await getRandomQuestions(10);
 
+    const gameQuestions = questions.map(q => ({
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation || "No explanation provided",
+    }));
+
     const game = await Game.create({
       user: userId,
-      questions,
+      questions: gameQuestions,
       currentQuestion: 0,
       earnings: 0,
       isOver: false,
@@ -28,32 +35,26 @@ export const startGame = async (req, res) => {
       },
     });
 
-    res.json({ message: "Game started", gameId: game._id, firstQuestion: questions[0] });
+    res.json({ message: "Game started", gameId: game._id, firstQuestion: gameQuestions[0] });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// controllers/gameController.js
-
+// Submit answer
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
     const game = await Game.findById(gameId);
 
-    if (!game) {
-      return res.status(404).json({ message: "Game not found" });
-    }
+    if (!game) return res.status(404).json({ message: "Game not found" });
 
     const currentQ = game.questions[game.currentQuestion];
-    if (!currentQ) {
-      return res.status(400).json({ message: "No current question found" });
-    }
+    if (!currentQ) return res.status(400).json({ message: "No current question found" });
 
     const isCorrect = currentQ.correctAnswer === answer;
 
     if (isCorrect) {
-      // Update prize
       game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
       game.currentQuestion += 1;
       await game.save();
@@ -63,12 +64,11 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `✅ Correct! You earned $${game.earnings}`,
           prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer, // ✅ Always send
-          explanation: currentQ.explanation,
+          correctAnswer: currentQ.correctAnswer,
+          explanation: currentQ.explanation || "No explanation provided",
           nextQuestion: game.questions[game.currentQuestion],
         });
       } else {
-        // Finished all questions
         game.isOver = true;
         await game.save();
 
@@ -76,12 +76,11 @@ export const submitAnswer = async (req, res) => {
           correct: true,
           message: `🎉 You won the top prize: $${game.earnings}`,
           prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer, // ✅ Always send
-          explanation: currentQ.explanation,
+          correctAnswer: currentQ.correctAnswer,
+          explanation: currentQ.explanation || "No explanation provided",
         });
       }
     } else {
-      // Wrong answer ends the game
       game.isOver = true;
       await game.save();
 
@@ -89,8 +88,8 @@ export const submitAnswer = async (req, res) => {
         correct: false,
         message: `❌ Wrong answer! You walk away with $${game.earnings}`,
         prize: game.earnings,
-        correctAnswer: currentQ.correctAnswer, // ✅ Always send
-        explanation: currentQ.explanation,
+        correctAnswer: currentQ.correctAnswer,
+        explanation: currentQ.explanation || "No explanation provided",
       });
     }
   } catch (error) {
@@ -98,10 +97,6 @@ export const submitAnswer = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
-
-
 
 // Quit game
 export const quitGame = async (req, res) => {
@@ -121,7 +116,7 @@ export const quitGame = async (req, res) => {
   }
 };
 
-// Use lifeline (unchanged)
+// Use lifeline
 export const useLifeline = async (req, res) => {
   try {
     const { gameId, type } = req.body;
@@ -143,7 +138,7 @@ export const useLifeline = async (req, res) => {
         if (!game.lifelines.fiftyFifty)
           return res.status(400).json({ message: "50:50 already used" });
 
-        const wrongAnswers = allOptions.filter((opt) => opt !== correctAnswer);
+        const wrongAnswers = allOptions.filter(opt => opt !== correctAnswer);
         const removed = wrongAnswers.sort(() => 0.5 - Math.random()).slice(0, 2);
 
         game.lifelines.fiftyFifty = false;
@@ -151,21 +146,18 @@ export const useLifeline = async (req, res) => {
 
         return res.json({
           message: "50:50 used",
-          remainingOptions: allOptions.filter((opt) => !removed.includes(opt)),
+          remainingOptions: allOptions.filter(opt => !removed.includes(opt)),
         });
 
       case "askAudience":
         if (!game.lifelines.askAudience)
           return res.status(400).json({ message: "Ask Audience already used" });
 
-        // Random audience poll
-        const correctPercent = Math.floor(Math.random() * 30) + 50; // 50-80%
+        const correctPercent = Math.floor(Math.random() * 30) + 50;
         let remaining = 100 - correctPercent;
         const poll = allOptions.map((opt, i) => {
           if (opt === correctAnswer) return { option: opt, votes: correctPercent };
-          const votes = i === allOptions.length - 1
-            ? remaining
-            : Math.floor(Math.random() * remaining);
+          const votes = i === allOptions.length - 1 ? remaining : Math.floor(Math.random() * remaining);
           remaining -= votes;
           return { option: opt, votes };
         });
@@ -183,8 +175,7 @@ export const useLifeline = async (req, res) => {
   }
 };
 
-
-// controllers/gameController.js
+// Get active game
 export const getActiveGame = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -192,13 +183,17 @@ export const getActiveGame = async (req, res) => {
 
     if (!game) return res.status(404).json({ message: "No active game found" });
 
+    const currentQ = game.questions[game.currentQuestion];
+
     res.json({
       gameId: game._id,
-      currentQuestion: game.questions[game.currentQuestion],
+      currentQuestion: currentQ,
       currentLevel: game.currentQuestion,
       prize: game.earnings,
       usedLifelines: game.lifelines,
-      timer: 30 // optional: default or saved timer if you want
+      correctAnswer: currentQ.correctAnswer,
+      explanation: currentQ.explanation || "No explanation provided",
+      timer: 30
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
