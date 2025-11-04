@@ -1,23 +1,20 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import { startGame, submitAnswer, quitGame, useLifeline , getActiveGame} from "../controllers/gameController.js";
+import {
+  startGame,
+  submitAnswer,
+  getActiveGame
+} from "../controllers/gameController.js";
 
 const router = express.Router();
 
-// Start new game (get random 10 questions)
+// 🎮 Start a new game or move to next level
 router.post("/start", protect, startGame);
 
-// Submit an answer
+// 🧠 Submit an answer for the current question
 router.post("/answer", protect, submitAnswer);
 
-// Quit game
-router.post("/quit", protect, quitGame);
-
-// Use lifeline (50-50, ask friend, etc.)
-router.post("/lifeline", protect, useLifeline);
-
-// routes/gameRoutes.js
+// 🔍 Get the user’s current active game and question
 router.get("/active", protect, getActiveGame);
-
 
 export default router;

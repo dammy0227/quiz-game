@@ -91,7 +91,7 @@ h3 {
 
 .correct-answer,
 .explanation {
-  color: yellow; /* same white color as popup text */
+  color: red; /* same white color as popup text */
   margin-top: 10px;
   text-align: center;
   font-size: 16px;

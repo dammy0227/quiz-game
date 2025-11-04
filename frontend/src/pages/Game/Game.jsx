@@ -1,205 +1,115 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import QuestionCard from "../../components/Game/QuestionCard";
-import Lifeline from "../../components/Game/Lifeline";
-import PrizeLadder from "../../components/Game/PrizeLadder";
 import {
   startGame,
   submitAnswer,
-  callLifeline,
-  quitGame,
-  getActiveGame
+  getActiveGame,
 } from "../../services/gameService";
 import "./Game.css";
 
 const Game = () => {
   const [gameId, setGameId] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [currentLevel, setCurrentLevel] = useState(0);
-  const [lastPrizeLevel, setLastPrizeLevel] = useState(0);
-  const [prize, setPrize] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState("easy");
+  const [score, setScore] = useState(0);
   const [message, setMessage] = useState("");
   const [isGameOver, setIsGameOver] = useState(false);
-  const [timer, setTimer] = useState(30);
-  const [showPrizePopup, setShowPrizePopup] = useState(false);
-  const [usedLifelines, setUsedLifelines] = useState({
-    fiftyFifty: false,
-    askAudience: false,
-  });
   const [gameStarted, setGameStarted] = useState(false);
-
-  // ✅ States for correct answer & explanation
-  const [correctAnswer, setCorrectAnswer] = useState("");
   const [explanation, setExplanation] = useState("");
+  const [nextLevel, setNextLevel] = useState(null);
 
-  // === AUDIO FILES ===
-  const correctSound = useMemo(() => new Audio("/clap.wav"), []);
-  const wrongSound = useMemo(() => new Audio("/fail.wav"), []);
-  const winSound = useMemo(() => new Audio("/win.wav"), []);
-
-  // === Resume active game ===
- useEffect(() => {
-  const loadActiveGame = async () => {
-    try {
-      const data = await getActiveGame();
-      if (data && data.currentQuestion) {
-        setGameId(data.gameId);
-        setCurrentQuestion(data.currentQuestion);
-        setCurrentLevel(data.currentLevel);
-        setPrize(data.prize);
-        setUsedLifelines(data.usedLifelines);
-        setTimer(data.timer || 30);
-        setGameStarted(true);
-
-        correctSound.play().catch((err) => console.log("Sound error:", err));
-      }
-    } catch (error) {
-      console.log("No active game:", error.message);
-      setGameStarted(false); // fallback to initial screen
-    }
-  };
-
-  loadActiveGame();
-}, [correctSound]);
-
-  // === Handle wrong answer ===
-  const handleWrongAnswer = useCallback(() => {
-    setIsGameOver(true);
-    setLastPrizeLevel(currentLevel);
-    setShowPrizePopup(true);
-    setMessage(`❌ Time's up! You walk away with $${prize}`);
-    wrongSound.play().catch((err) => console.log("Sound error:", err));
-  }, [prize, currentLevel, wrongSound]);
-
-  // === Timer countdown ===
+  // === Load active game on mount ===
   useEffect(() => {
-    if (!gameStarted || isGameOver || !currentQuestion) return;
-    if (timer === 0) {
-      handleWrongAnswer();
-      return;
-    }
-    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    return () => clearInterval(interval);
-  }, [timer, isGameOver, currentQuestion, gameStarted, handleWrongAnswer]);
+    const loadActiveGame = async () => {
+      try {
+        const data = await getActiveGame();
+        if (data && data.currentQuestion) {
+          setGameId(data.gameId);
+          setCurrentQuestion(data.currentQuestion);
+          setCurrentLevel(data.currentLevel);
+          setScore(data.score);
+          setGameStarted(true);
+        }
+      } catch (error) {
+        console.log("No active game found", error);
+      }
+    };
+    loadActiveGame();
+  }, []);
 
   // === Start a new game ===
-  const initGame = async () => {
+  const initGame = async (level = "easy") => {
     try {
-      const data = await startGame();
-      setGameId(data.gameId);
-      setCurrentQuestion(data.firstQuestion);
-      setCurrentLevel(0);
-      setLastPrizeLevel(0);
-      setPrize(0);
-      setTimer(30);
-      setUsedLifelines({ fiftyFifty: false, askAudience: false });
+      const data = await startGame({ level });
+
+      const firstQuestion =
+        data.questions?.[0] ||
+        data.game?.questions?.[data.game.currentQuestionIndex]?.questionId;
+
+      setGameId(data.game?._id || data.gameId);
+      setCurrentQuestion(firstQuestion);
+      setCurrentLevel(level);
+      setScore(0);
       setMessage("");
-      setCorrectAnswer("");
       setExplanation("");
       setIsGameOver(false);
-      setShowPrizePopup(false);
       setGameStarted(true);
-      correctSound.play().catch((err) => console.log("Sound error:", err));
     } catch (error) {
       console.error("Error starting game:", error);
+      setMessage("Error starting game");
     }
   };
 
-  // === Handle answer submission ===
+  // === Handle answer ===
   const handleAnswer = async (answer) => {
-    if (!gameId) return;
     try {
-      console.log("Submitting answer:", answer);
       const data = await submitAnswer(gameId, answer);
-      console.log("Response data:", data); // Debug the response
 
-      // ✅ ALWAYS set these values from the response
-      setMessage(data.message || "");
-      setCorrectAnswer(data.correctAnswer || "");
-      setExplanation(data.explanation || "No explanation provided.");
+      // Always show explanation if present
+      setExplanation(data.explanation || "");
+
+      if (data.nextQuestions) {
+        // ❌ Wrong answer → restart same level
+        setMessage(data.message);
+        setCurrentLevel(currentLevel);
+        setScore(data.score);
+        setCurrentQuestion(data.nextQuestions[0]);
+        return;
+      }
 
       if (data.nextQuestion) {
-        // Correct answer, game continues
-        setPrize(data.prize || 0);
-        setShowPrizePopup(true);
-        setLastPrizeLevel(currentLevel);
-        correctSound.play().catch((err) => console.log("Sound error:", err));
-
-        setTimeout(() => {
-          setShowPrizePopup(false);
-          setCurrentQuestion(data.nextQuestion);
-          setCurrentLevel((prev) => prev + 1);
-          setTimer(30);
-          setMessage("");
-          setCorrectAnswer("");
-          setExplanation("");
-        }, 1500);
-      } else {
-        // Game over (win or lose)
-        setPrize(data.prize || 0);
+        // ✅ Correct → next question in same level
+        setCurrentQuestion(data.nextQuestion);
+        setScore(data.score);
+        setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
+      } else if (data.nextLevel) {
+        // 🎯 Level completed → move to next level
+        setMessage(data.message);
         setIsGameOver(true);
-        setLastPrizeLevel(currentLevel);
-        setShowPrizePopup(true);
-        
-        // Use the correct flag from backend instead of message parsing
-        const isWin = data.correct === true;
-        setMessage(
-          isWin
-            ? `🎉 Congratulations! You won the full prize: $${data.prize}`
-            : `❌ Wrong answer! You walk away with $${data.prize}`
-        );
-        
-        const sound = isWin ? winSound : wrongSound;
-        sound.play().catch((err) => console.log("Sound error:", err));
+        setNextLevel(data.nextLevel);
+        setScore(0);
+      } else if (data.completedLevels) {
+        // 🏁 Game completed → no next level
+        setMessage(data.message);
+        setIsGameOver(true);
+        setNextLevel(null);
       }
     } catch (error) {
       console.error("Error submitting answer:", error);
-      setMessage("Error submitting answer. Please try again.");
+      setMessage("Error submitting answer");
     }
   };
 
-  // === Quit game ===
-  const handleQuit = async () => {
-    if (!gameId) return;
-    try {
-      const data = await quitGame(gameId);
-      setPrize(data.prize);
-      setIsGameOver(true);
-      setLastPrizeLevel(currentLevel);
-      setShowPrizePopup(true);
-      setMessage(`You quit. You walk away with $${data.prize}`);
-      wrongSound.play().catch((err) => console.log("Sound error:", err));
-    } catch (error) {
-      console.error("Error quitting game:", error);
+  // === Move to next level ===
+  const handleNextLevel = async () => {
+    if (nextLevel) {
+      await initGame(nextLevel);
     }
   };
 
-  // === Lifeline ===
-  const handleLifeline = async (type) => {
-    if (!gameId || usedLifelines[type]) return;
-
-    try {
-      const data = await callLifeline(gameId, type);
-
-      if (data.remainingOptions) {
-        setCurrentQuestion({
-          ...currentQuestion,
-          options: data.remainingOptions,
-        });
-      }
-
-      if (data.poll) {
-        setMessage(
-          "Audience Poll: " +
-            data.poll.map((p) => `${p.option}: ${p.votes}%`).join(" | ")
-        );
-      } else if (data.message) {
-        setMessage(data.message);
-      }
-
-      setUsedLifelines((prev) => ({ ...prev, [type]: true }));
-    } catch (error) {
-      console.error("Error using lifeline:", error);
-    }
+  // === Restart game from easy ===
+  const handleRestart = () => {
+    initGame("easy");
   };
 
   // === Render ===
@@ -207,76 +117,43 @@ const Game = () => {
     return (
       <div className="game-page">
         <h2>Cybersecurity Quiz Game</h2>
-        <PrizeLadder currentLevel={0} lastPrizeLevel={0} isGameOver={false} />
-        <button className="start-btn" onClick={initGame}>
-          Start New Game
+        <button className="start-btn" onClick={() => initGame("easy")}>
+          Start Game
         </button>
       </div>
     );
 
-  if (!currentQuestion) return <p>Loading game...</p>;
+  if (!currentQuestion) return <p>Loading question...</p>;
 
   return (
     <div className="game-page">
-      {showPrizePopup && (
-        <div className="popup">
-          <PrizeLadder
-            currentLevel={currentLevel}
-            lastPrizeLevel={lastPrizeLevel}
-            isGameOver={isGameOver}
-          />
+      <div className="game-header">
+        <h3>Level: {currentLevel.toUpperCase()}</h3>
+        <h4>Score: {score}</h4>
+      </div>
 
-          <p className="popup-message">{message}</p>
-
-          {correctAnswer && (
-            <p className="correct-answer">✅ Correct Answer: {correctAnswer}</p>
-          )}
-
-          <p className="explanation">
-            💡 Explanation: {explanation}
-          </p>
-
-          {!isGameOver && (
-            <button
-              className="continue-btn"
-              onClick={() => setShowPrizePopup(false)}
-            >
-              Continue
-            </button>
-          )}
-
-          {isGameOver && (
-            <button className="restart-btn" onClick={initGame}>
-              Play Again
-            </button>
-          )}
-        </div>
+      {!isGameOver && (
+        <QuestionCard
+          question={currentQuestion.question}
+          options={currentQuestion.options}
+          onAnswer={handleAnswer}
+        />
       )}
 
-      {!isGameOver && !showPrizePopup && (
-        <div className="game-content">
-          <div className="game-header">
-            <h3>Time Remaining: {timer}s</h3>
-            <div className="prize-display">Current Prize: ${prize}</div>
-          </div>
-          
-          <QuestionCard
-            question={currentQuestion.question}
-            options={currentQuestion.options}
-            onAnswer={handleAnswer}
-          />
-          
-          <Lifeline
-            onFiftyFifty={() => handleLifeline("fiftyFifty")}
-            onAskAudience={() => handleLifeline("askAudience")}
-            usedLifelines={usedLifelines}
-          />
-          
-          <button className="quit-btn" onClick={handleQuit}>
-            Quit Game
-          </button>
-          
-          {message && <p className="game-message">{message}</p>}
+      {explanation && (
+        <p className="explanation">💡 Explanation: {explanation}</p>
+      )}
+
+      {message && <p className="game-message">{message}</p>}
+
+      {isGameOver && (
+        <div className="end-screen">
+          <p>{message}</p>
+          {nextLevel ? (
+            <button onClick={handleNextLevel}>Next Level</button>
+          ) : (
+            <button onClick={handleRestart}>Restart Game</button>
+          )}
         </div>
       )}
     </div>

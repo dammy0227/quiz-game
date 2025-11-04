@@ -31,7 +31,19 @@
 }
 
 .option-btn:hover {
-  background-color: #1f2937;
+  background-color: #4b5563;
+}
+
+/* ✅ Selected option style */
+.option-btn.selected {
+  background-color: #16a34a; /* green highlight */
+  color: white;
+}
+
+/* ✅ Disabled buttons stay dim but visible */
+.option-btn:disabled:not(.selected) {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {

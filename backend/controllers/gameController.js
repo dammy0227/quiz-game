@@ -1,246 +1,235 @@
 import Game from "../models/gameModel.js";
 import { getRandomQuestions } from "../utils/randomizer.js";
 
-// Prize ladder for 10 questions
-const prizeLadder = [
-  0, 100, 200, 300, 500, 1000,
-  2000, 4000, 8000, 16000, 32000
-];
-
-// Start a new game
+/**
+ * Start a new game or continue to next level
+ */
 export const startGame = async (req, res) => {
   try {
     const userId = req.user.id;
-    const questions = await getRandomQuestions(10);
+    let game = await Game.findOne({ user: userId });
 
-    // Make sure we're copying ALL question fields including explanation
-    const gameQuestions = questions.map(q => ({
-      question: q.question,
-      options: q.options,
-      correctAnswer: q.correctAnswer,
-      explanation: q.explanation, // ✅ Ensure this is copied
-      category: q.category // ✅ Copy category too if needed
-    }));
+    // 🎮 If no game yet, start from "easy"
+    if (!game) {
+      const easyQuestions = await getRandomQuestions("easy", 10);
 
-    const game = await Game.create({
-      user: userId,
-      questions: gameQuestions, // Use the mapped questions with all fields
-      currentQuestion: 0,
-      earnings: 0,
-      isOver: false,
-      walkedAway: false,
-      lifelines: {
-        fiftyFifty: true,
-        phoneAFriend: true,
-        askAudience: true,
-        skip: true,
-      },
-    });
+      game = await Game.create({
+        user: userId,
+        currentLevel: "easy",
+        questions: easyQuestions.map((q) => ({
+          questionId: q._id,
+          selectedAnswer: null,
+          isCorrect: false,
+        })),
+        currentQuestionIndex: 0,
+        score: 0,
+        completedLevels: [],
+      });
 
-    res.json({ 
-      message: "Game started", 
-      gameId: game._id, 
-      firstQuestion: gameQuestions[0] // Return the first question with explanation
+      return res.status(201).json({
+        message: "New game started at Easy level",
+        game,
+        questions: easyQuestions,
+      });
+    }
+
+    // 🧠 If player already has a game
+    if (game.isCompleted) {
+      return res.json({ message: "You’ve already completed all levels!", game });
+    }
+
+    return res.json({
+      message: "Game already in progress",
+      game,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Error starting game", error: error.message });
   }
 };
 
-// controllers/gameController.js
-
+/**
+ * Submit an answer for the current question
+ */
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
-    const game = await Game.findById(gameId);
+    const game = await Game.findById(gameId).populate("questions.questionId");
 
-    if (!game) {
-      return res.status(404).json({ message: "Game not found" });
-    }
+    if (!game) return res.status(404).json({ message: "Game not found" });
 
-    const currentQ = game.questions[game.currentQuestion];
-    if (!currentQ) {
-      return res.status(400).json({ message: "No current question found" });
-    }
+    const currentIndex = game.currentQuestionIndex;
+    const currentQ = game.questions[currentIndex];
+    const questionDoc = currentQ.questionId;
 
-    // ✅ ADD DEBUG LOG HERE
-    console.log("DEBUG - Current Question Data:", {
-      question: currentQ.question,
-      correctAnswer: currentQ.correctAnswer,
-      hasExplanation: !!currentQ.explanation,
-      explanation: currentQ.explanation,
-      allFields: Object.keys(currentQ)
-    });
+    if (!questionDoc)
+      return res.status(400).json({ message: "Invalid question data" });
 
-    const isCorrect = currentQ.correctAnswer === answer;
+    const isCorrect = questionDoc.correctAnswer === answer;
 
-    if (isCorrect) {
-      // Update prize
-      game.earnings = prizeLadder[game.currentQuestion + 1] || game.earnings;
-      game.currentQuestion += 1;
-      await game.save();
+    // 🧩 Update current question details
+    currentQ.selectedAnswer = answer;
+    currentQ.isCorrect = isCorrect;
 
-      if (game.currentQuestion < game.questions.length) {
-        return res.json({
-          correct: true,
-          message: `✅ Correct! You earned $${game.earnings}`,
-          prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer,
-          explanation: currentQ.explanation,
-          nextQuestion: game.questions[game.currentQuestion],
-        });
-      } else {
-        // Finished all questions
-        game.isOver = true;
-        await game.save();
+    if (!isCorrect) {
+      // ❌ Wrong answer → Reset score and restart same level
+      game.score = 0;
+      game.currentQuestionIndex = 0;
 
-        return res.json({
-          correct: true,
-          message: `🎉 You won the top prize: $${game.earnings}`,
-          prize: game.earnings,
-          correctAnswer: currentQ.correctAnswer,
-          explanation: currentQ.explanation,
-        });
-      }
-    } else {
-      // Wrong answer ends the game
-      game.isOver = true;
+      // Fetch new random questions for this same level
+      const newQuestions = await getRandomQuestions(game.currentLevel, 10);
+      game.questions = newQuestions.map((q) => ({
+        questionId: q._id,
+        selectedAnswer: null,
+        isCorrect: false,
+      }));
+
       await game.save();
 
       return res.json({
         correct: false,
-        message: `❌ Wrong answer! You walk away with $${game.earnings}`,
-        prize: game.earnings,
-        correctAnswer: currentQ.correctAnswer,
-        explanation: currentQ.explanation,
+        message: `Wrong answer! Restarting ${game.currentLevel} level.`,
+        explanation: questionDoc.explanation,
+        score: game.score,
+        nextQuestions: newQuestions,
       });
     }
-  } catch (error) {
-    console.error("❌ Error in submitAnswer:", error.message);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
 
+    // ✅ Correct answer → increase score
+    game.score += 1;
+    game.currentQuestionIndex += 1;
 
-// Quit game
-export const quitGame = async (req, res) => {
-  try {
-    const { gameId } = req.body;
-    const game = await Game.findById(gameId);
+    const levelCompleted = game.currentQuestionIndex >= game.questions.length;
 
-    if (!game || game.isOver) return res.status(400).json({ message: "No active game found" });
+    if (levelCompleted) {
+      // ✅ Mark level as completed
+      if (!game.completedLevels.includes(game.currentLevel)) {
+        game.completedLevels.push(game.currentLevel);
+      }
 
-    game.isOver = true;
-    game.walkedAway = true;
-    await game.save();
+      // Find next level
+      const nextLevel = getNextLevel(game.currentLevel);
 
-    res.json({ message: "🚪 You quit the game", prize: game.earnings });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+      if (nextLevel) {
+        // 🎯 Move to next level
+        const nextQuestions = await getRandomQuestions(nextLevel, 10);
+        game.currentLevel = nextLevel;
+        game.questions = nextQuestions.map((q) => ({
+          questionId: q._id,
+          selectedAnswer: null,
+          isCorrect: false,
+        }));
+        game.currentQuestionIndex = 0;
+        game.score = 0; // reset score for new level
 
-// Use lifeline (unchanged)
-export const useLifeline = async (req, res) => {
-  try {
-    const { gameId, type } = req.body;
-    const game = await Game.findById(gameId);
-
-    if (!game || game.isOver)
-      return res.status(400).json({ message: "No active game found" });
-
-    if (!game.lifelines) {
-      game.lifelines = { fiftyFifty: true, askAudience: true, skip: true };
-    }
-
-    const currentQ = game.questions[game.currentQuestion];
-    const allOptions = [...currentQ.options];
-    const correctAnswer = currentQ.correctAnswer;
-
-    switch (type) {
-      case "fiftyFifty":
-        if (!game.lifelines.fiftyFifty)
-          return res.status(400).json({ message: "50:50 already used" });
-
-        const wrongAnswers = allOptions.filter((opt) => opt !== correctAnswer);
-        const removed = wrongAnswers.sort(() => 0.5 - Math.random()).slice(0, 2);
-
-        game.lifelines.fiftyFifty = false;
         await game.save();
 
         return res.json({
-          message: "50:50 used",
-          remainingOptions: allOptions.filter((opt) => !removed.includes(opt)),
+          correct: true,
+          message: `✅ ${questionDoc.level.toUpperCase()} level completed! Moving to ${nextLevel}.`,
+          explanation: questionDoc.explanation,
+          nextLevel,
+          nextQuestions,
         });
-
-      case "askAudience":
-        if (!game.lifelines.askAudience)
-          return res.status(400).json({ message: "Ask Audience already used" });
-
-        // Random audience poll
-        const correctPercent = Math.floor(Math.random() * 30) + 50; // 50-80%
-        let remaining = 100 - correctPercent;
-        const poll = allOptions.map((opt, i) => {
-          if (opt === correctAnswer) return { option: opt, votes: correctPercent };
-          const votes = i === allOptions.length - 1
-            ? remaining
-            : Math.floor(Math.random() * remaining);
-          remaining -= votes;
-          return { option: opt, votes };
-        });
-
-        game.lifelines.askAudience = false;
+      } else {
+        // 🎉 Finished all levels
+        game.isCompleted = true;
         await game.save();
 
-        return res.json({ message: "Audience poll used", poll });
-
-      default:
-        return res.status(400).json({ message: "Invalid lifeline type" });
+        return res.json({
+          correct: true,
+          message: "🎉 Congratulations! You’ve completed all levels.",
+          totalScore: game.score,
+          completedLevels: game.completedLevels,
+        });
+      }
     }
+
+    await game.save();
+
+    // 👉 Send next question
+    const nextQ = game.questions[game.currentQuestionIndex].questionId;
+    res.json({
+      correct: true,
+      explanation: questionDoc.explanation,
+      nextQuestion: {
+        question: nextQ.question,
+        options: nextQ.options,
+        level: nextQ.level,
+      },
+      score: game.score,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Error submitting answer", error: error.message });
   }
 };
 
+/**
+ * Helper to get next level name
+ */
+const getNextLevel = (currentLevel) => {
+  const levels = ["easy", "intermediate", "hard"];
+  const currentIndex = levels.indexOf(currentLevel);
+  return currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null;
+};
 
-// controllers/gameController.js
-// controllers/gameController.js
+/**
+ * Get current active game
+ */
 export const getActiveGame = async (req, res) => {
   try {
     const userId = req.user.id;
-    const game = await Game.findOne({ user: userId, isOver: false });
-    if (!game) return res.status(404).json({ message: "No active game" });
+    let game = await Game.findOne({ user: userId, isCompleted: false })
+      .populate("questions.questionId");
 
-    const currentQIndex = game.currentQuestion;
+    if (!game) {
+      return res.status(404).json({ message: "No active game found" });
+    }
 
+    const currentQuestionData = game.questions[game.currentQuestionIndex];
+    const currentQ = currentQuestionData?.questionId;
+
+    // 🧩 Auto-fix broken game
+    if (!currentQ) {
+      console.log("⚠️ Fixing broken game for user:", userId);
+      const newQs = await getRandomQuestions("easy", 10);
+      game.questions = newQs.map((q) => ({
+        questionId: q._id,
+        selectedAnswer: null,
+        isCorrect: false,
+      }));
+      game.currentQuestionIndex = 0;
+      await game.save();
+
+      return res.json({
+        message: "Fixed broken game and restarted",
+        gameId: game._id,
+        currentLevel: game.currentLevel,
+        score: game.score,
+        currentQuestion: {
+          question: newQs[0].question,
+          options: newQs[0].options,
+          level: newQs[0].level,
+        },
+      });
+    }
+
+    // ✅ Normal response
     res.json({
       gameId: game._id,
-      currentQuestion: game.questions[currentQIndex],
-      currentLevel: currentQIndex,
-      prize: game.earnings,
-      usedLifelines: {
-        fiftyFifty: !game.lifelines.fiftyFifty,
-        askAudience: !game.lifelines.askAudience
+      currentLevel: game.currentLevel,
+      score: game.score,
+      currentQuestion: {
+        question: currentQ.question,
+        options: currentQ.options,
+        level: currentQ.level,
       },
-      timer: 30, // initial timer (optional)
+      completedLevels: game.completedLevels,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in getActiveGame:", error);
+    res.status(500).json({ message: "Error fetching game", error: error.message });
   }
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ 
