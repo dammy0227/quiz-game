@@ -22,10 +22,11 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: [
-    "https://quiz-game-nu-five.vercel.app", // Vercel frontend
-    "http://localhost:5173"                   // Local dev
+    "https://quiz-game-nu-five.vercel.app",
+    "http://localhost:5173"
   ],
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
 
