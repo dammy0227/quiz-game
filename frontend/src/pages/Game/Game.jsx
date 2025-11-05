@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import QuestionCard from "../../components/Game/QuestionCard";
-import {
-  startGame,
-  submitAnswer,
-  getActiveGame,
-} from "../../services/gameService";
+import { startGame, submitAnswer, getActiveGame } from "../../services/gameService";
 import "./Game.css";
+import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 
 const Game = () => {
   const [gameId, setGameId] = useState(null);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [questions, setQuestions] = useState([]); // 🆕 store all questions
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentLevel, setCurrentLevel] = useState("easy");
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState("");
@@ -18,14 +16,14 @@ const Game = () => {
   const [explanation, setExplanation] = useState("");
   const [nextLevel, setNextLevel] = useState(null);
 
-  // === Load active game on mount ===
   useEffect(() => {
     const loadActiveGame = async () => {
       try {
         const data = await getActiveGame();
         if (data && data.currentQuestion) {
           setGameId(data.gameId);
-          setCurrentQuestion(data.currentQuestion);
+          setQuestions(data.questions || [data.currentQuestion]);
+          setCurrentIndex(data.currentIndex || 0);
           setCurrentLevel(data.currentLevel);
           setScore(data.score);
           setGameStarted(true);
@@ -37,17 +35,13 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  // === Start a new game ===
   const initGame = async (level = "easy") => {
     try {
       const data = await startGame({ level });
-
-      const firstQuestion =
-        data.questions?.[0] ||
-        data.game?.questions?.[data.game.currentQuestionIndex]?.questionId;
-
+      const qList = data.questions || [];
       setGameId(data.game?._id || data.gameId);
-      setCurrentQuestion(firstQuestion);
+      setQuestions(qList);
+      setCurrentIndex(0);
       setCurrentLevel(level);
       setScore(0);
       setMessage("");
@@ -60,36 +54,21 @@ const Game = () => {
     }
   };
 
-  // === Handle answer ===
   const handleAnswer = async (answer) => {
     try {
       const data = await submitAnswer(gameId, answer);
-
-      // Always show explanation if present
       setExplanation(data.explanation || "");
-
-      if (data.nextQuestions) {
-        // ❌ Wrong answer → restart same level
-        setMessage(data.message);
-        setCurrentLevel(currentLevel);
-        setScore(data.score);
-        setCurrentQuestion(data.nextQuestions[0]);
-        return;
-      }
+      setScore(data.score);
 
       if (data.nextQuestion) {
-        // ✅ Correct → next question in same level
-        setCurrentQuestion(data.nextQuestion);
-        setScore(data.score);
+        setQuestions((prev) => [...prev, data.nextQuestion]);
+        setCurrentIndex((prev) => prev + 1);
         setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
       } else if (data.nextLevel) {
-        // 🎯 Level completed → move to next level
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(data.nextLevel);
-        setScore(0);
       } else if (data.completedLevels) {
-        // 🏁 Game completed → no next level
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(null);
@@ -100,19 +79,32 @@ const Game = () => {
     }
   };
 
-  // === Move to next level ===
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setExplanation("");
+      setMessage("");
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
+      setExplanation("");
+      setMessage("");
+    }
+  };
+
   const handleNextLevel = async () => {
     if (nextLevel) {
       await initGame(nextLevel);
     }
   };
 
-  // === Restart game from easy ===
   const handleRestart = () => {
     initGame("easy");
   };
 
-  // === Render ===
   if (!gameStarted)
     return (
       <div className="game-page">
@@ -122,6 +114,8 @@ const Game = () => {
         </button>
       </div>
     );
+
+  const currentQuestion = questions[currentIndex];
 
   if (!currentQuestion) return <p>Loading question...</p>;
 
@@ -133,11 +127,22 @@ const Game = () => {
       </div>
 
       {!isGameOver && (
-        <QuestionCard
-          question={currentQuestion.question}
-          options={currentQuestion.options}
-          onAnswer={handleAnswer}
-        />
+        <>
+          <QuestionCard
+            question={currentQuestion.question}
+            options={currentQuestion.options}
+            onAnswer={handleAnswer}
+          />
+
+          <div className="nav-buttons">
+            <button onClick={handlePrev} disabled={currentIndex === 0}>
+              <FaArrowLeft /> Previous
+            </button>
+            <button onClick={handleNext} disabled={currentIndex === questions.length - 1}>
+              Next <FaArrowRight />
+            </button>
+          </div>
+        </>
       )}
 
       {explanation && (
