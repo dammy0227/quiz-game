@@ -1,3 +1,4 @@
+// src/pages/Game/Game.jsx
 import React, { useState, useEffect } from "react";
 import QuestionCard from "../../components/Game/QuestionCard";
 import { startGame, submitAnswer, getActiveGame } from "../../services/gameService";
@@ -15,8 +16,11 @@ const Game = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [explanation, setExplanation] = useState("");
   const [nextLevel, setNextLevel] = useState(null);
-  const [unlockedLevels, setUnlockedLevels] = useState(["easy"]); // ✅ initially only easy unlocked
+  const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
+  const [selectedLevel, setSelectedLevel] = useState(""); // for level selection
+  const [isFailed, setIsFailed] = useState(false); // for wrong answer
 
+  // Load active game if user refreshes
   useEffect(() => {
     const loadActiveGame = async () => {
       try {
@@ -36,7 +40,8 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  const initGame = async (level = "easy") => {
+  // Start game function
+  const initGame = async (level) => {
     try {
       const data = await startGame({ level });
       const qList = data.questions || [];
@@ -49,38 +54,49 @@ const Game = () => {
       setExplanation("");
       setIsGameOver(false);
       setGameStarted(true);
+      setIsFailed(false);
     } catch (error) {
       console.error("Error starting game:", error);
       setMessage("Error starting game");
     }
   };
 
+  // Handle answer submission
   const handleAnswer = async (answer) => {
     try {
       const data = await submitAnswer(gameId, answer);
       setExplanation(data.explanation || "");
+
+      if (!data.correct) {
+        setMessage("❌ Wrong! Start again.");
+        setScore(0);
+        setIsFailed(true); // mark failure
+        return;
+      }
+
       setScore(data.score);
 
       if (data.nextQuestion) {
         setQuestions((prev) => [...prev, data.nextQuestion]);
         setCurrentIndex((prev) => prev + 1);
-        setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
+        setMessage("✅ Correct!");
       } else if (data.nextLevel) {
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(data.nextLevel);
-        setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]); // ✅ unlock next level
+        setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]);
       } else if (data.completedLevels) {
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(null);
       }
     } catch (error) {
-      console.error("Error submitting answer:", error);
+      console.error(error);
       setMessage("Error submitting answer");
     }
   };
 
+  // Navigation
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -97,14 +113,16 @@ const Game = () => {
     }
   };
 
-  const handleNextLevel = () => {
-    setGameStarted(false); // ✅ go back to level selection
+  // Restart current level
+  const handleRestart = () => {
+    initGame(currentLevel);
+    setIsFailed(false);
   };
 
-  const handleRestart = () => {
-    setUnlockedLevels(["easy"]);
+  // Go back to level selection
+  const handleNextLevel = () => {
     setGameStarted(false);
-    setMessage("");
+    setSelectedLevel("");
   };
 
   // ✅ LEVEL SELECTION SCREEN
@@ -112,35 +130,34 @@ const Game = () => {
     return (
       <div className="game-page">
         <h2>Cybersecurity Quiz Game</h2>
-        <p>Select a difficulty level to begin:</p>
+        <p>Select a difficulty level:</p>
 
         <div className="level-buttons">
-          <button onClick={() => initGame("easy")} className="start-btn">
-            Easy
-          </button>
-
-          <button
-            className="start-btn"
-            onClick={() =>
-              unlockedLevels.includes("intermediate")
-                ? initGame("intermediate")
-                : alert("You must finish Easy first!")
-            }
-          >
-            Intermediate
-          </button>
-
-          <button
-            className="start-btn"
-            onClick={() =>
-              unlockedLevels.includes("hard")
-                ? initGame("hard")
-                : alert("You must finish Intermediate first!")
-            }
-          >
-            Hard
-          </button>
+          {["easy", "intermediate", "hard"].map((level) => (
+            <button
+              key={level}
+              className="start-btn"
+              onClick={() => {
+                if (unlockedLevels.includes(level)) {
+                  setSelectedLevel(level);
+                } else {
+                  alert(`You must finish previous level first!`);
+                }
+              }}
+            >
+              {level.charAt(0).toUpperCase() + level.slice(1)}
+            </button>
+          ))}
         </div>
+
+        {selectedLevel && (
+          <button
+            onClick={() => initGame(selectedLevel)}
+            className="confirm-btn"
+          >
+            Start {selectedLevel.toUpperCase()} Game
+          </button>
+        )}
 
         {unlockedLevels.length > 1 && (
           <p className="progress-note">
@@ -162,7 +179,7 @@ const Game = () => {
         <h4>Score: {score}</h4>
       </div>
 
-      {!isGameOver && (
+      {!isGameOver && !isFailed && (
         <>
           <QuestionCard
             question={currentQuestion.question}
@@ -174,7 +191,10 @@ const Game = () => {
             <button onClick={handlePrev} disabled={currentIndex === 0}>
               <FaArrowLeft /> Previous
             </button>
-            <button onClick={handleNext} disabled={currentIndex === questions.length - 1}>
+            <button
+              onClick={handleNext}
+              disabled={currentIndex === questions.length - 1}
+            >
               Next <FaArrowRight />
             </button>
           </div>
@@ -184,7 +204,15 @@ const Game = () => {
       {explanation && <p className="explanation">💡 Explanation: {explanation}</p>}
       {message && <p className="game-message">{message}</p>}
 
-      {isGameOver && (
+      {/* Restart if failed */}
+      {isFailed && (
+        <button onClick={handleRestart} className="restart-btn">
+          Start Again
+        </button>
+      )}
+
+      {/* End screen for completed level */}
+      {isGameOver && !isFailed && (
         <div className="end-screen">
           <p>{message}</p>
           {nextLevel ? (
