@@ -1,4 +1,3 @@
-// src/pages/Game/Game.jsx
 import React, { useState, useEffect } from "react";
 import QuestionCard from "../../components/Game/QuestionCard";
 import { startGame, submitAnswer, getActiveGame } from "../../services/gameService";
@@ -12,13 +11,12 @@ const Game = () => {
   const [currentLevel, setCurrentLevel] = useState("");
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState("");
+  const [explanation, setExplanation] = useState("");
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  const [explanation, setExplanation] = useState("");
   const [nextLevel, setNextLevel] = useState(null);
   const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
-  const [selectedLevel, setSelectedLevel] = useState(""); // for level selection
-  const [isFailed, setIsFailed] = useState(false); // for wrong answer
+  const [isFailed, setIsFailed] = useState(false);
 
   // Load active game if user refreshes
   useEffect(() => {
@@ -40,46 +38,56 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  // Start game function
+  // Start game / restart level
   const initGame = async (level) => {
     try {
+      setGameStarted(true);
+      setMessage("Loading questions...");
+      setQuestions([]);
+      setCurrentIndex(0);
+      setScore(0);
+      setExplanation("");
+      setIsFailed(false);
+      setIsGameOver(false);
+
       const data = await startGame({ level });
       const qList = data.questions || [];
+      if (!qList.length) {
+        setMessage("No questions available for this level.");
+        return;
+      }
+
       setGameId(data.game?._id || data.gameId);
       setQuestions(qList);
       setCurrentIndex(0);
       setCurrentLevel(level);
       setScore(0);
       setMessage("");
-      setExplanation("");
-      setIsGameOver(false);
-      setGameStarted(true);
-      setIsFailed(false);
     } catch (error) {
       console.error("Error starting game:", error);
       setMessage("Error starting game");
     }
   };
 
-  // Handle answer submission
+  // Submit answer
   const handleAnswer = async (answer) => {
     try {
       const data = await submitAnswer(gameId, answer);
       setExplanation(data.explanation || "");
+      setScore(data.score);
 
-      if (!data.correct) {
-        setMessage("❌ Wrong! Start again.");
-        setScore(0);
-        setIsFailed(true); // mark failure
+      if (data.correct === false && !data.nextQuestion) {
+        // User failed the question and no next question
+        setIsFailed(true);
+        setMessage("❌ You failed. Start again?");
+        setIsGameOver(true);
         return;
       }
-
-      setScore(data.score);
 
       if (data.nextQuestion) {
         setQuestions((prev) => [...prev, data.nextQuestion]);
         setCurrentIndex((prev) => prev + 1);
-        setMessage("✅ Correct!");
+        setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
       } else if (data.nextLevel) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -91,12 +99,11 @@ const Game = () => {
         setNextLevel(null);
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error submitting answer:", error);
       setMessage("Error submitting answer");
     }
   };
 
-  // Navigation
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
@@ -113,51 +120,60 @@ const Game = () => {
     }
   };
 
-  // Restart current level
-  const handleRestart = () => {
-    initGame(currentLevel);
-    setIsFailed(false);
-  };
-
-  // Go back to level selection
   const handleNextLevel = () => {
     setGameStarted(false);
-    setSelectedLevel("");
   };
 
-  // ✅ LEVEL SELECTION SCREEN
+  const handleRestart = async () => {
+    try {
+      setIsFailed(false);
+      setIsGameOver(false);
+      setMessage("");
+      setExplanation("");
+      setQuestions([]);
+      setCurrentIndex(0);
+      setScore(0);
+      await initGame(currentLevel);
+    } catch (error) {
+      console.error("Error restarting game:", error);
+      setMessage("Failed to restart the game.");
+    }
+  };
+
+  // LEVEL SELECTION
   if (!gameStarted) {
     return (
       <div className="game-page">
         <h2>Cybersecurity Quiz Game</h2>
-        <p>Select a difficulty level:</p>
+        <p>Select a difficulty level to begin:</p>
 
         <div className="level-buttons">
-          {["easy", "intermediate", "hard"].map((level) => (
-            <button
-              key={level}
-              className="start-btn"
-              onClick={() => {
-                if (unlockedLevels.includes(level)) {
-                  setSelectedLevel(level);
-                } else {
-                  alert(`You must finish previous level first!`);
-                }
-              }}
-            >
-              {level.charAt(0).toUpperCase() + level.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {selectedLevel && (
-          <button
-            onClick={() => initGame(selectedLevel)}
-            className="confirm-btn"
-          >
-            Start {selectedLevel.toUpperCase()} Game
+          <button onClick={() => initGame("easy")} className="start-btn">
+            Easy
           </button>
-        )}
+
+          <button
+            className="start-btn"
+            onClick={() =>
+              unlockedLevels.includes("intermediate")
+                ? initGame("intermediate")
+                : alert("You must finish Easy first!")
+            }
+          >
+            Intermediate
+          </button>
+
+          <button
+            className="start-btn"
+            onClick={() =>
+              unlockedLevels.includes("hard")
+                ? initGame("hard")
+                : alert("You must finish Intermediate first!")
+            }
+          >
+            Hard
+          </button>
+        </div>
 
         {unlockedLevels.length > 1 && (
           <p className="progress-note">
@@ -168,7 +184,7 @@ const Game = () => {
     );
   }
 
-  // ✅ MAIN GAME SCREEN
+  // MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
   if (!currentQuestion) return <p>Loading question...</p>;
 
@@ -179,7 +195,7 @@ const Game = () => {
         <h4>Score: {score}</h4>
       </div>
 
-      {!isGameOver && !isFailed && (
+      {!isGameOver && (
         <>
           <QuestionCard
             question={currentQuestion.question}
@@ -204,18 +220,11 @@ const Game = () => {
       {explanation && <p className="explanation">💡 Explanation: {explanation}</p>}
       {message && <p className="game-message">{message}</p>}
 
-      {/* Restart if failed */}
-      {isFailed && (
-        <button onClick={handleRestart} className="restart-btn">
-          Start Again
-        </button>
-      )}
-
-      {/* End screen for completed level */}
-      {isGameOver && !isFailed && (
+      {isGameOver && (
         <div className="end-screen">
-          <p>{message}</p>
-          {nextLevel ? (
+          {isFailed ? (
+            <button onClick={handleRestart}>Start Again</button>
+          ) : nextLevel ? (
             <button onClick={handleNextLevel}>Go to Level Selection</button>
           ) : (
             <button onClick={handleRestart}>Restart Game</button>
