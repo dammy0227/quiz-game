@@ -61,21 +61,19 @@ export const submitAnswer = async (req, res) => {
     const currentQ = game.questions[currentIndex];
     const questionDoc = currentQ.questionId;
 
-    if (!questionDoc)
-      return res.status(400).json({ message: "Invalid question data" });
+    if (!questionDoc) return res.status(400).json({ message: "Invalid question data" });
 
     const isCorrect = questionDoc.correctAnswer === answer;
 
-    // 🧩 Update current question details
     currentQ.selectedAnswer = answer;
     currentQ.isCorrect = isCorrect;
 
     if (!isCorrect) {
-      // ❌ Wrong answer → Reset score and restart same level
+      // ❌ Wrong answer → reset score and restart same level with new random questions
       game.score = 0;
       game.currentQuestionIndex = 0;
 
-      // Fetch new random questions for this same level
+      // Fetch new random questions for the same level (Math.random style)
       const newQuestions = await getRandomQuestions(game.currentLevel, 10);
       game.questions = newQuestions.map((q) => ({
         questionId: q._id,
@@ -87,30 +85,31 @@ export const submitAnswer = async (req, res) => {
 
       return res.json({
         correct: false,
-        message: `Wrong answer! Restarting ${game.currentLevel} level.`,
+        failed: true, // frontend knows this is a fail
+        message: `❌ Wrong answer! Restarting ${game.currentLevel} level with new questions.`,
         explanation: questionDoc.explanation,
         score: game.score,
-        nextQuestions: newQuestions,
+        questions: newQuestions.map((q) => ({
+          question: q.question,
+          options: q.options,
+          level: q.level,
+        })),
       });
     }
 
-    // ✅ Correct answer → increase score
+    // ✅ Correct answer
     game.score += 1;
     game.currentQuestionIndex += 1;
 
     const levelCompleted = game.currentQuestionIndex >= game.questions.length;
 
     if (levelCompleted) {
-      // ✅ Mark level as completed
       if (!game.completedLevels.includes(game.currentLevel)) {
         game.completedLevels.push(game.currentLevel);
       }
 
-      // Find next level
       const nextLevel = getNextLevel(game.currentLevel);
-
       if (nextLevel) {
-        // 🎯 Move to next level
         const nextQuestions = await getRandomQuestions(nextLevel, 10);
         game.currentLevel = nextLevel;
         game.questions = nextQuestions.map((q) => ({
@@ -119,19 +118,22 @@ export const submitAnswer = async (req, res) => {
           isCorrect: false,
         }));
         game.currentQuestionIndex = 0;
-        game.score = 0; // reset score for new level
+        game.score = 0;
 
         await game.save();
 
         return res.json({
           correct: true,
-          message: `✅ ${questionDoc.level.toUpperCase()} level completed! Moving to ${nextLevel}.`,
-          explanation: questionDoc.explanation,
+          message: `✅ Level ${currentQ.questionId.level.toUpperCase()} completed! Moving to ${nextLevel}.`,
+          explanation: currentQ.questionId.explanation,
           nextLevel,
-          nextQuestions,
+          questions: nextQuestions.map((q) => ({
+            question: q.question,
+            options: q.options,
+            level: q.level,
+          })),
         });
       } else {
-        // 🎉 Finished all levels
         game.isCompleted = true;
         await game.save();
 
@@ -150,7 +152,7 @@ export const submitAnswer = async (req, res) => {
     const nextQ = game.questions[game.currentQuestionIndex].questionId;
     res.json({
       correct: true,
-      explanation: questionDoc.explanation,
+      explanation: currentQ.questionId.explanation,
       nextQuestion: {
         question: nextQ.question,
         options: nextQ.options,
@@ -158,20 +160,19 @@ export const submitAnswer = async (req, res) => {
       },
       score: game.score,
     });
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Error submitting answer", error: error.message });
   }
 };
 
-/**
- * Helper to get next level name
- */
+// Helper to get next level
 const getNextLevel = (currentLevel) => {
   const levels = ["easy", "intermediate", "hard"];
   const currentIndex = levels.indexOf(currentLevel);
   return currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null;
 };
-
 /**
  * Get current active game
  */

@@ -17,6 +17,7 @@ const Game = () => {
   const [nextLevel, setNextLevel] = useState(null);
   const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
   const [isFailed, setIsFailed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Load active game if user refreshes
   useEffect(() => {
@@ -25,7 +26,7 @@ const Game = () => {
         const data = await getActiveGame();
         if (data && data.currentQuestion) {
           setGameId(data.gameId);
-          setQuestions(data.questions || [data.currentQuestion]);
+          setQuestions([data.currentQuestion, ...data.questions.slice(1)]);
           setCurrentIndex(data.currentIndex || 0);
           setCurrentLevel(data.currentLevel);
           setScore(data.score);
@@ -38,8 +39,9 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  // Start game / restart level
+  // Start a new game or restart a level
   const initGame = async (level) => {
+    setLoading(true);
     try {
       setGameStarted(true);
       setMessage("Loading questions...");
@@ -66,6 +68,8 @@ const Game = () => {
     } catch (error) {
       console.error("Error starting game:", error);
       setMessage("Error starting game");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,27 +77,37 @@ const Game = () => {
   const handleAnswer = async (answer) => {
     try {
       const data = await submitAnswer(gameId, answer);
+
       setExplanation(data.explanation || "");
       setScore(data.score);
 
-      if (data.correct === false && !data.nextQuestion) {
-        // User failed the question and no next question
-        setIsFailed(true);
-        setMessage("❌ You failed. Start again?");
+      // ❌ Failed answer
+      if (data.failed) {
+        setMessage(data.message);
         setIsGameOver(true);
+        setIsFailed(true);
+        setQuestions(data.questions); // replace with new questions
+        setCurrentIndex(0);
         return;
       }
 
+      // ✅ Next question
       if (data.nextQuestion) {
         setQuestions((prev) => [...prev, data.nextQuestion]);
         setCurrentIndex((prev) => prev + 1);
         setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
-      } else if (data.nextLevel) {
+      }
+
+      // ✅ Level completed
+      if (data.nextLevel) {
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(data.nextLevel);
         setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]);
-      } else if (data.completedLevels) {
+      }
+
+      // ✅ All levels completed
+      if (data.completedLevels) {
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(null);
@@ -122,25 +136,22 @@ const Game = () => {
 
   const handleNextLevel = () => {
     setGameStarted(false);
+    setIsFailed(false);
+    setIsGameOver(false);
+    setMessage("");
   };
 
-  const handleRestart = async () => {
-    try {
-      setIsFailed(false);
-      setIsGameOver(false);
-      setMessage("");
-      setExplanation("");
-      setQuestions([]);
-      setCurrentIndex(0);
-      setScore(0);
-      await initGame(currentLevel);
-    } catch (error) {
-      console.error("Error restarting game:", error);
-      setMessage("Failed to restart the game.");
-    }
+  const handleRestart = () => {
+    if (!questions || questions.length === 0) return;
+    setIsFailed(false);
+    setIsGameOver(false);
+    setCurrentIndex(0);
+    setScore(0);
+    setExplanation("");
+    setMessage("");
   };
 
-  // LEVEL SELECTION
+  // LEVEL SELECTION SCREEN
   if (!gameStarted) {
     return (
       <div className="game-page">
@@ -148,10 +159,7 @@ const Game = () => {
         <p>Select a difficulty level to begin:</p>
 
         <div className="level-buttons">
-          <button onClick={() => initGame("easy")} className="start-btn">
-            Easy
-          </button>
-
+          <button onClick={() => initGame("easy")} className="start-btn">Easy</button>
           <button
             className="start-btn"
             onClick={() =>
@@ -162,7 +170,6 @@ const Game = () => {
           >
             Intermediate
           </button>
-
           <button
             className="start-btn"
             onClick={() =>
@@ -183,6 +190,8 @@ const Game = () => {
       </div>
     );
   }
+
+  if (loading) return <p>Loading questions...</p>;
 
   // MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
