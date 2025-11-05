@@ -17,6 +17,7 @@ const Game = () => {
   const [nextLevel, setNextLevel] = useState(null);
   const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
   const [isFailed, setIsFailed] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ loading state
 
   // Load active game if user refreshes
   useEffect(() => {
@@ -40,32 +41,35 @@ const Game = () => {
 
   // Start game / restart level
   const initGame = async (level) => {
+    setLoading(true); // start loading
     try {
-      setGameStarted(true);
-      setMessage("Loading questions...");
-      setQuestions([]);
-      setCurrentIndex(0);
-      setScore(0);
+      setMessage("");
       setExplanation("");
       setIsFailed(false);
       setIsGameOver(false);
+      setCurrentIndex(0);
+      setScore(0);
+      setCurrentLevel(level);
+      setQuestions([]);
+      setGameStarted(true);
 
       const data = await startGame({ level });
       const qList = data.questions || [];
       if (!qList.length) {
         setMessage("No questions available for this level.");
+        setLoading(false);
         return;
       }
 
       setGameId(data.game?._id || data.gameId);
       setQuestions(qList);
       setCurrentIndex(0);
-      setCurrentLevel(level);
       setScore(0);
-      setMessage("");
     } catch (error) {
       console.error("Error starting game:", error);
       setMessage("Error starting game");
+    } finally {
+      setLoading(false); // stop loading
     }
   };
 
@@ -77,7 +81,6 @@ const Game = () => {
       setScore(data.score);
 
       if (data.correct === false && !data.nextQuestion) {
-        // User failed the question and no next question
         setIsFailed(true);
         setMessage("❌ You failed. Start again?");
         setIsGameOver(true);
@@ -125,19 +128,13 @@ const Game = () => {
   };
 
   const handleRestart = async () => {
-    try {
-      setIsFailed(false);
-      setIsGameOver(false);
-      setMessage("");
-      setExplanation("");
-      setQuestions([]);
-      setCurrentIndex(0);
-      setScore(0);
-      await initGame(currentLevel);
-    } catch (error) {
-      console.error("Error restarting game:", error);
-      setMessage("Failed to restart the game.");
-    }
+    await initGame(currentLevel); // ✅ ensures questions are fetched before rendering
+    setIsFailed(false);
+    setIsGameOver(false);
+    setMessage("");
+    setExplanation("");
+    setCurrentIndex(0);
+    setScore(0);
   };
 
   // LEVEL SELECTION
@@ -183,6 +180,8 @@ const Game = () => {
       </div>
     );
   }
+
+  if (loading) return <p>Loading questions...</p>; // ✅ show loading
 
   // MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
