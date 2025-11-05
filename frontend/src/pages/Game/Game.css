@@ -83,7 +83,7 @@ h3 {
   .continue-btn,
   .restart-btn,
   .quit-btn {
-    width: 80%;
+    width: 100%;
     font-size: 16px;
   }
 }
@@ -140,4 +140,12 @@ h3 {
   margin-top: 15px;
   color: green;
   font-weight: bold;
+}
+
+.start-again{
+  background-color: red;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
 }

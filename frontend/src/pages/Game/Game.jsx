@@ -18,6 +18,7 @@ const Game = () => {
   const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
   const [isFailed, setIsFailed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeGameLoaded, setActiveGameLoaded] = useState(false);
 
   // Load active game if user refreshes
   useEffect(() => {
@@ -26,7 +27,7 @@ const Game = () => {
         const data = await getActiveGame();
         if (data && data.currentQuestion) {
           setGameId(data.gameId);
-          setQuestions([data.currentQuestion, ...data.questions.slice(1)]);
+          setQuestions([data.currentQuestion, ...(data.questions?.slice(1) || [])]);
           setCurrentIndex(data.currentIndex || 0);
           setCurrentLevel(data.currentLevel);
           setScore(data.score);
@@ -34,12 +35,14 @@ const Game = () => {
         }
       } catch (error) {
         console.log("No active game found", error);
+      } finally {
+        setActiveGameLoaded(true);
       }
     };
     loadActiveGame();
   }, []);
 
-  // Start a new game or restart a level
+  // Start a new game
   const initGame = async (level) => {
     setLoading(true);
     try {
@@ -81,24 +84,21 @@ const Game = () => {
       setExplanation(data.explanation || "");
       setScore(data.score);
 
-      // ❌ Failed answer
       if (data.failed) {
         setMessage(data.message);
         setIsGameOver(true);
         setIsFailed(true);
-        setQuestions(data.questions); // replace with new questions
+        setQuestions(data.questions);
         setCurrentIndex(0);
         return;
       }
 
-      // ✅ Next question
       if (data.nextQuestion) {
         setQuestions((prev) => [...prev, data.nextQuestion]);
         setCurrentIndex((prev) => prev + 1);
         setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
       }
 
-      // ✅ Level completed
       if (data.nextLevel) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -106,7 +106,6 @@ const Game = () => {
         setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]);
       }
 
-      // ✅ All levels completed
       if (data.completedLevels) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -134,25 +133,22 @@ const Game = () => {
     }
   };
 
-  const handleNextLevel = () => {
+  // Back to level selection
+  const handleGoToLevelSelection = () => {
     setGameStarted(false);
     setIsFailed(false);
     setIsGameOver(false);
     setMessage("");
-  };
-
-  const handleRestart = () => {
-    if (!questions || questions.length === 0) return;
-    setIsFailed(false);
-    setIsGameOver(false);
+    setQuestions([]);
     setCurrentIndex(0);
     setScore(0);
     setExplanation("");
-    setMessage("");
+    setNextLevel(null);
+    setCurrentLevel("");
   };
 
-  // LEVEL SELECTION SCREEN
-  if (!gameStarted) {
+  // Show level selection only if game hasn't started and active game has loaded
+  if (!gameStarted && activeGameLoaded) {
     return (
       <div className="game-page">
         <h2>Cybersecurity Quiz Game</h2>
@@ -192,10 +188,9 @@ const Game = () => {
   }
 
   if (loading) return <p>Loading questions...</p>;
+  if (!questions || !questions.length) return <p>Loading question...</p>;
 
-  // MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
-  if (!currentQuestion) return <p>Loading question...</p>;
 
   return (
     <div className="game-page">
@@ -231,13 +226,9 @@ const Game = () => {
 
       {isGameOver && (
         <div className="end-screen">
-          {isFailed ? (
-            <button onClick={handleRestart}>Start Again</button>
-          ) : nextLevel ? (
-            <button onClick={handleNextLevel}>Go to Level Selection</button>
-          ) : (
-            <button onClick={handleRestart}>Restart Game</button>
-          )}
+          <button onClick={handleGoToLevelSelection}>
+            {isFailed ? "Start Again" : nextLevel ? "Go to Level Selection" : "Restart Game"}
+          </button>
         </div>
       )}
     </div>
