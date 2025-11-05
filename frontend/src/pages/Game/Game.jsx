@@ -18,7 +18,7 @@ const Game = () => {
   const [unlockedLevels, setUnlockedLevels] = useState(["easy"]);
   const [isFailed, setIsFailed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeGameLoaded, setActiveGameLoaded] = useState(false);
+  const [activeGameLoaded, setActiveGameLoaded] = useState(false); // flag for initial load
 
   // Load active game if user refreshes
   useEffect(() => {
@@ -31,7 +31,7 @@ const Game = () => {
           setCurrentIndex(data.currentIndex || 0);
           setCurrentLevel(data.currentLevel);
           setScore(data.score);
-          setGameStarted(true);
+          setGameStarted(true); // resume game automatically
         }
       } catch (error) {
         console.log("No active game found", error);
@@ -42,7 +42,7 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  // Start a new game
+  // Start a new game or restart a level
   const initGame = async (level) => {
     setLoading(true);
     try {
@@ -84,21 +84,24 @@ const Game = () => {
       setExplanation(data.explanation || "");
       setScore(data.score);
 
+      // ❌ Failed answer
       if (data.failed) {
         setMessage(data.message);
         setIsGameOver(true);
         setIsFailed(true);
-        setQuestions(data.questions);
+        setQuestions(data.questions); // replace with new random questions
         setCurrentIndex(0);
         return;
       }
 
+      // ✅ Next question
       if (data.nextQuestion) {
         setQuestions((prev) => [...prev, data.nextQuestion]);
         setCurrentIndex((prev) => prev + 1);
         setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
       }
 
+      // ✅ Level completed
       if (data.nextLevel) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -106,6 +109,7 @@ const Game = () => {
         setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]);
       }
 
+      // ✅ All levels completed
       if (data.completedLevels) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -133,18 +137,21 @@ const Game = () => {
     }
   };
 
-  // Back to level selection
-  const handleGoToLevelSelection = () => {
+  const handleNextLevel = () => {
     setGameStarted(false);
     setIsFailed(false);
     setIsGameOver(false);
     setMessage("");
-    setQuestions([]);
+  };
+
+  const handleRestart = () => {
+    if (!questions || questions.length === 0) return;
+    setIsFailed(false);
+    setIsGameOver(false);
     setCurrentIndex(0);
     setScore(0);
     setExplanation("");
-    setNextLevel(null);
-    setCurrentLevel("");
+    setMessage("");
   };
 
   // Show level selection only if game hasn't started and active game has loaded
@@ -190,6 +197,7 @@ const Game = () => {
   if (loading) return <p>Loading questions...</p>;
   if (!questions || !questions.length) return <p>Loading question...</p>;
 
+  // MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
 
   return (
@@ -226,9 +234,13 @@ const Game = () => {
 
       {isGameOver && (
         <div className="end-screen">
-          <button onClick={handleGoToLevelSelection}>
-            {isFailed ? "Start Again" : nextLevel ? "Go to Level Selection" : "Restart Game"}
-          </button>
+          {isFailed ? (
+            <button onClick={handleRestart}>Start Again</button>
+          ) : nextLevel ? (
+            <button onClick={handleNextLevel}>Go to Level Selection</button>
+          ) : (
+            <button onClick={handleRestart}>Restart Game</button>
+          )}
         </div>
       )}
     </div>
