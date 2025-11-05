@@ -6,15 +6,16 @@ import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
 
 const Game = () => {
   const [gameId, setGameId] = useState(null);
-  const [questions, setQuestions] = useState([]); // 🆕 store all questions
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentLevel, setCurrentLevel] = useState("easy");
+  const [currentLevel, setCurrentLevel] = useState("");
   const [score, setScore] = useState(0);
   const [message, setMessage] = useState("");
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [explanation, setExplanation] = useState("");
   const [nextLevel, setNextLevel] = useState(null);
+  const [unlockedLevels, setUnlockedLevels] = useState(["easy"]); // ✅ initially only easy unlocked
 
   useEffect(() => {
     const loadActiveGame = async () => {
@@ -68,6 +69,7 @@ const Game = () => {
         setMessage(data.message);
         setIsGameOver(true);
         setNextLevel(data.nextLevel);
+        setUnlockedLevels((prev) => [...new Set([...prev, data.nextLevel])]); // ✅ unlock next level
       } else if (data.completedLevels) {
         setMessage(data.message);
         setIsGameOver(true);
@@ -95,28 +97,62 @@ const Game = () => {
     }
   };
 
-  const handleNextLevel = async () => {
-    if (nextLevel) {
-      await initGame(nextLevel);
-    }
+  const handleNextLevel = () => {
+    setGameStarted(false); // ✅ go back to level selection
   };
 
   const handleRestart = () => {
-    initGame("easy");
+    setUnlockedLevels(["easy"]);
+    setGameStarted(false);
+    setMessage("");
   };
 
-  if (!gameStarted)
+  // ✅ LEVEL SELECTION SCREEN
+  if (!gameStarted) {
     return (
       <div className="game-page">
         <h2>Cybersecurity Quiz Game</h2>
-        <button className="start-btn" onClick={() => initGame("easy")}>
-          Start Game
-        </button>
+        <p>Select a difficulty level to begin:</p>
+
+        <div className="level-buttons">
+          <button onClick={() => initGame("easy")} className="start-btn">
+            Easy
+          </button>
+
+          <button
+            className="start-btn"
+            onClick={() =>
+              unlockedLevels.includes("intermediate")
+                ? initGame("intermediate")
+                : alert("You must finish Easy first!")
+            }
+          >
+            Intermediate
+          </button>
+
+          <button
+            className="start-btn"
+            onClick={() =>
+              unlockedLevels.includes("hard")
+                ? initGame("hard")
+                : alert("You must finish Intermediate first!")
+            }
+          >
+            Hard
+          </button>
+        </div>
+
+        {unlockedLevels.length > 1 && (
+          <p className="progress-note">
+            ✅ You have unlocked: {unlockedLevels.join(", ")}
+          </p>
+        )}
       </div>
     );
+  }
 
+  // ✅ MAIN GAME SCREEN
   const currentQuestion = questions[currentIndex];
-
   if (!currentQuestion) return <p>Loading question...</p>;
 
   return (
@@ -145,17 +181,14 @@ const Game = () => {
         </>
       )}
 
-      {explanation && (
-        <p className="explanation">💡 Explanation: {explanation}</p>
-      )}
-
+      {explanation && <p className="explanation">💡 Explanation: {explanation}</p>}
       {message && <p className="game-message">{message}</p>}
 
       {isGameOver && (
         <div className="end-screen">
           <p>{message}</p>
           {nextLevel ? (
-            <button onClick={handleNextLevel}>Next Level</button>
+            <button onClick={handleNextLevel}>Go to Level Selection</button>
           ) : (
             <button onClick={handleRestart}>Restart Game</button>
           )}

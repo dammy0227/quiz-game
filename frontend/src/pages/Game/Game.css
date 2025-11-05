@@ -128,3 +128,16 @@ h3 {
   background-color: #9ca3af;
   cursor: not-allowed;
 }
+
+.level-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.progress-note {
+  margin-top: 15px;
+  color: green;
+  font-weight: bold;
+}
