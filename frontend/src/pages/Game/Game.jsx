@@ -27,7 +27,7 @@ const Game = () => {
         const data = await getActiveGame();
         if (data && data.currentQuestion) {
           setGameId(data.gameId);
-          setQuestions([data.currentQuestion, ...(data.questions?.slice(1) || [])]);
+          setQuestions(data.questions || [data.currentQuestion]);
           setCurrentIndex(data.currentIndex || 0);
           setCurrentLevel(data.currentLevel);
           setScore(data.score);
@@ -62,8 +62,15 @@ const Game = () => {
         return;
       }
 
+      // Initialize selectedAnswer and correctAnswer for each question
+      const formattedQuestions = qList.map((q) => ({
+        ...q,
+        selectedAnswer: null,
+        correctAnswer: q.correctAnswer || null, // ensure correct answer is available
+      }));
+
       setGameId(data.game?._id || data.gameId);
-      setQuestions(qList);
+      setQuestions(formattedQuestions);
       setCurrentIndex(0);
       setCurrentLevel(level);
       setScore(0);
@@ -84,19 +91,42 @@ const Game = () => {
       setExplanation(data.explanation || "");
       setScore(data.score);
 
+      // Update the answered question locally
+      setQuestions((prev) =>
+        prev.map((q, idx) =>
+          idx === currentIndex
+            ? { ...q, selectedAnswer: answer, correctAnswer: q.correctAnswer }
+            : q
+        )
+      );
+
       // ❌ Failed answer
       if (data.failed) {
         setMessage(data.message);
         setIsGameOver(true);
         setIsFailed(true);
-        setQuestions(data.questions); // replace with new random questions
+
+        // Reset questions with new random ones from backend
+        const resetQuestions = data.questions.map((q) => ({
+          ...q,
+          selectedAnswer: null,
+          correctAnswer: q.correctAnswer,
+        }));
+        setQuestions(resetQuestions);
         setCurrentIndex(0);
         return;
       }
 
       // ✅ Next question
       if (data.nextQuestion) {
-        setQuestions((prev) => [...prev, data.nextQuestion]);
+        setQuestions((prev) => [
+          ...prev,
+          {
+            ...data.nextQuestion,
+            selectedAnswer: null,
+            correctAnswer: data.nextQuestion.correctAnswer,
+          },
+        ]);
         setCurrentIndex((prev) => prev + 1);
         setMessage(data.correct ? "✅ Correct!" : "❌ Wrong!");
       }
@@ -146,12 +176,21 @@ const Game = () => {
 
   const handleRestart = () => {
     if (!questions || questions.length === 0) return;
+
     setIsFailed(false);
     setIsGameOver(false);
     setCurrentIndex(0);
     setScore(0);
     setExplanation("");
     setMessage("");
+
+    // Reset all questions to allow re-answering
+    setQuestions((prev) =>
+      prev.map((q) => ({
+        ...q,
+        selectedAnswer: null,
+      }))
+    );
   };
 
   // Show level selection only if game hasn't started and active game has loaded
@@ -162,7 +201,9 @@ const Game = () => {
         <p>Select a difficulty level to begin:</p>
 
         <div className="level-buttons">
-          <button onClick={() => initGame("easy")} className="start-btn">Easy</button>
+          <button onClick={() => initGame("easy")} className="start-btn">
+            Easy
+          </button>
           <button
             className="start-btn"
             onClick={() =>
@@ -213,6 +254,8 @@ const Game = () => {
             question={currentQuestion.question}
             options={currentQuestion.options}
             onAnswer={handleAnswer}
+            selectedAnswer={currentQuestion.selectedAnswer}
+            correctAnswer={currentQuestion.correctAnswer}
           />
 
           <div className="nav-buttons">
@@ -235,7 +278,7 @@ const Game = () => {
       {isGameOver && (
         <div className="end-screen">
           {isFailed ? (
-            <button onClick={handleRestart}>Start Again</button>
+            <button onClick={handleRestart} className="start-again">Start Again</button>
           ) : nextLevel ? (
             <button onClick={handleNextLevel}>Go to Level Selection</button>
           ) : (

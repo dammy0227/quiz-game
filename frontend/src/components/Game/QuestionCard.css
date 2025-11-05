@@ -56,3 +56,13 @@
     font-size: 18px;
   }
 }
+
+.option-btn.correct {
+  background-color: #16a34a; /* green */
+  color: white;
+}
+
+.option-btn.wrong {
+  background-color: #dc2626; /* red */
+  color: white;
+}

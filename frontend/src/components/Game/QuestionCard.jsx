@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import "./QuestionCard.css";
 
-const QuestionCard = ({ question, options = [], onAnswer }) => {
-  const [selected, setSelected] = useState(null);
-
-  // 🧹 Reset selected option whenever a new question comes in
-  useEffect(() => {
-    setSelected(null);
-  }, [question]);
+const QuestionCard = ({
+  question,
+  options = [],
+  onAnswer,
+  selectedAnswer,   // ✅ Pass selected answer from parent
+  correctAnswer,    // ✅ Pass correct answer from parent
+}) => {
 
   const handleClick = (opt) => {
-    setSelected(opt);
+    if (selectedAnswer) return; // prevent re-answering
     onAnswer(opt);
   };
 
@@ -20,16 +20,26 @@ const QuestionCard = ({ question, options = [], onAnswer }) => {
 
       <div className="options">
         {options.length > 0 ? (
-          options.map((opt) => (
-            <button
-              key={`${question}-${opt}`} // ✅ Unique key to reset per question
-              className={`option-btn ${selected === opt ? "selected" : ""}`}
-              onClick={() => handleClick(opt)}
-              disabled={!!selected} // ✅ Disable after selection to avoid double clicks
-            >
-              {opt}
-            </button>
-          ))
+          options.map((opt) => {
+            let className = "option-btn";
+
+            // ✅ Apply coloring based on selected answer and correctness
+            if (selectedAnswer) {
+              if (opt === correctAnswer) className += " correct";
+              else if (opt === selectedAnswer && opt !== correctAnswer) className += " wrong";
+            }
+
+            return (
+              <button
+                key={`${question}-${opt}`}
+                className={className}
+                onClick={() => handleClick(opt)}
+                disabled={!!selectedAnswer} // disable if already answered
+              >
+                {opt}
+              </button>
+            );
+          })
         ) : (
           <p>No options available.</p>
         )}
