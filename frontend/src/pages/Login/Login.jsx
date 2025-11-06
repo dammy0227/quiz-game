@@ -16,7 +16,7 @@ const Login = () => {
     try {
       const data = await loginAPI({ email, password });
       login(data);
-      navigate("/game");
+      navigate("/leaderboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
