@@ -1,68 +1,123 @@
+/* --- CARD CONTAINER --- */
 .question-card {
-  background-color: #1f2937;
-  padding: 20px;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  /* backdrop-filter: blur(10px); */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 2rem;
+  margin: 1.5rem auto;
   width: 100%;
-  margin: 10px 0;
+  max-width: 900px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  color: #f1f5f9;
   text-align: center;
+  transition: all 0.3s ease-in-out;
 }
 
+.question-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* --- QUESTION TEXT --- */
 .question-text {
-  font-size: 20px;
-  margin-bottom: 20px;
-  color: #f9fafb;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.8rem;
+  color: rgb(33, 31, 31);
 }
 
+/* --- OPTIONS GRID --- */
 .options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  color: black;
 }
 
+@media (max-width: 640px) {
+  .options {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- OPTION BUTTONS --- */
 .option-btn {
-  background-color: #374151;
-  border: none;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 16px;
-  color: #f9fafb;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid #3b82f6;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1rem;
+  color: black;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.25s ease-in-out;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.option-btn:hover {
-  background-color: #4b5563;
+/* Glow animation on hover */
+.option-btn:hover:not(:disabled) {
+  background: rgba(0, 150, 255, 0.15);
+  border-color: rgba(0, 150, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 150, 255, 0.4);
+  transform: scale(1.02);
 }
 
-/* ✅ Selected option style */
-.option-btn.selected {
-  background-color: #16a34a; /* green highlight */
-  color: white;
-}
-
-/* ✅ Disabled buttons stay dim but visible */
-.option-btn:disabled:not(.selected) {
+/* --- DISABLED --- */
+.option-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-@media (max-width: 600px) {
-  .option-btn {
-    font-size: 14px;
-    padding: 8px;
-  }
-
-  .question-text {
-    font-size: 18px;
-  }
-}
-
+/* --- CORRECT / WRONG STYLES --- */
 .option-btn.correct {
-  background-color: #16a34a; /* green */
+  background: linear-gradient(135deg, #16a34a, #22c55e);
   color: white;
+  border: 1px solid #16a34a;
+  box-shadow: 0 0 15px rgba(22, 163, 74, 0.6);
 }
 
 .option-btn.wrong {
-  background-color: #dc2626; /* red */
+  background: linear-gradient(135deg, #dc2626, #ef4444);
   color: white;
+  border: 1px solid #dc2626;
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.6);
+}
+
+/* --- CLICK RIPPLE EFFECT --- */
+.option-btn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.option-btn:active::after {
+  width: 200%;
+  height: 200%;
+  opacity: 0;
+  transition: 0s;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.option-btn {
+  animation: fadeIn 0.4s ease-in-out;
 }

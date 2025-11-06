@@ -5,36 +5,33 @@ const QuestionCard = ({
   question,
   options = [],
   onAnswer,
-  selectedAnswer,   // ✅ Pass selected answer from parent
-  correctAnswer,    // ✅ Pass correct answer from parent
+  selectedAnswer,
+  correctAnswer,
+  disabled = false, // new prop
 }) => {
 
   const handleClick = (opt) => {
-    if (selectedAnswer) return; // prevent re-answering
+    if (selectedAnswer || disabled) return; // prevent re-answering
     onAnswer(opt);
   };
 
   return (
     <div className="question-card">
       <h2 className="question-text">{question || "No question available"}</h2>
-
       <div className="options">
         {options.length > 0 ? (
           options.map((opt) => {
             let className = "option-btn";
-
-            // ✅ Apply coloring based on selected answer and correctness
             if (selectedAnswer) {
               if (opt === correctAnswer) className += " correct";
               else if (opt === selectedAnswer && opt !== correctAnswer) className += " wrong";
             }
-
             return (
               <button
                 key={`${question}-${opt}`}
                 className={className}
                 onClick={() => handleClick(opt)}
-                disabled={!!selectedAnswer} // disable if already answered
+                disabled={!!selectedAnswer || disabled} 
               >
                 {opt}
               </button>
@@ -47,5 +44,6 @@ const QuestionCard = ({
     </div>
   );
 };
+
 
 export default QuestionCard;

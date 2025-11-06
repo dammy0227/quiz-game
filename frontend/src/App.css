@@ -5,58 +5,6 @@
   margin: 0;
 }
 
-/* Layout */
-.layout {
-  display: flex;
-  min-height: 100vh; /* full viewport */
-  flex-direction: row; /* default for desktop */
-}
-
-/* Content area */
-.content {
-  flex: 1;
-  padding: 20px;
-  margin-left: 220px; /* match sidebar width */
-  background-color: #f9fafb;
-  min-height: 100vh; /* full height */
-  display: flex;
-  flex-direction: column;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 220px;
-  height: 100vh;
-  background-color: #111827;
-  color: white;
-  position: fixed;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-}
-
-/* ===== Mobile Responsive ===== */
-@media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  .sidebar {
-    width: 100%;
-    height: auto; /* allow content to grow */
-    position: relative;
-    flex-direction: row;
-    padding: 10px 0;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .content {
-    margin-left: 0;
-    margin-top: 0;
-    min-height: calc(100vh - 60px); /* adjust for mobile sidebar height */
-  }
+body{
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
 }

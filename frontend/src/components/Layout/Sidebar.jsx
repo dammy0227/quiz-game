@@ -1,48 +1,55 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FaBars, FaTimes } from "react-icons/fa";
 import "./Sidebar.css";
 
-const Sidebar = () => {
+const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const menuItems = [
     { name: "Play Game", path: "/game" },
     { name: "Leaderboard", path: "/leaderboard" },
-    { name: "Profile", path: "/profile" },
-    { name: "Logout", path: "/logout" }, // handled specially
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // remove auth token
-    navigate("/login"); // redirect to login
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   return (
-    <div className="sidebar">
-      <ul className="sidebar-menu">
-        {menuItems.map((item, index) => (
-          <li
-            key={index}
-            className={
-              location.pathname === item.path ? "active sidebar-item" : "sidebar-item"
-            }
-          >
-            {item.name === "Logout" ? (
-              <button
-                onClick={handleLogout}
-                className="sidebar-link-button"
-              >
-                {item.name}
-              </button>
-            ) : (
-              <Link to={item.path}>{item.name}</Link>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <nav className="navbar">
+      <div className="nav-container">
+        <h1 className="nav-logo" onClick={() => navigate("/")}>
+          CyberQuest 🛡️
+        </h1>
+
+        <div className={`nav-links ${menuOpen ? "open" : ""}`}>
+          {menuItems.map((item, i) => (
+            <Link
+              key={i}
+              to={item.path}
+              onClick={() => setMenuOpen(false)}
+              className={location.pathname === item.path ? "active" : ""}
+            >
+              {item.name}
+            </Link>
+          ))}
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+
+        <div
+          className="nav-toggle"
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? <FaTimes /> : <FaBars />}
+        </div>
+      </div>
+    </nav>
   );
 };
 
-export default Sidebar;
+export default Navbar;

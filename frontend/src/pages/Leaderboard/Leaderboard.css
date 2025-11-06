@@ -1,3 +1,334 @@
-.leaderboard-page {
+/* ==== GLOBAL CONTAINER ==== */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 30px auto;
   padding: 20px;
+  font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #222;
+}
+
+/* ==== WELCOME SECTION ==== */
+.welcome-section {
+  background: linear-gradient(135deg, #007bff, #5a67d8);
+  color: #fff;
+  border-radius: 14px;
+  padding: 25px;
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.section h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.section p {
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+/* ==== STATS CARDS ==== */
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin-bottom: 25px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px 18px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  color: #007bff;
+}
+
+.stat-card h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.stat-card p {
+  margin-top: 6px;
+  font-weight: bold;
+  font-size: 18px;
+  color: #222;
+}
+
+/* ==== PROGRESS SECTION ==== */
+.progress-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 30px;
+}
+
+.progress-section h4 {
+  font-size: 15px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 12px;
+  background: linear-gradient(90deg, #007bff, #5a67d8);
+  transition: width 0.4s ease;
+}
+
+.progress-percent {
+  text-align: right;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+/* ==== MAIN FLEX LAYOUT ==== */
+.main-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 25px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* ==== CONTINUE LEARNING ==== */
+.continue-card {
+  flex: 1 1 45%;
+  background: linear-gradient(135deg, #007bff, #5a67d8);
+  color: white;
+  border-radius: 12px;
+  padding: 30px 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* min-height: 320px; */
+}
+
+.continue-card h3 {
+  margin-top: 0;
+  font-size: 22px;
+  /* margin-bottom: 10px; */
+}
+
+.continue-card .description {
+  font-size: 14px;
+  margin: 12px 0;
+  color: #e0e8ff;
+  line-height: 1.5;
+}
+
+.start-btn {
+  background: white;
+  color: #007bff;
+  font-weight: 600;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.3s ease;
+}
+
+.start-btn:hover {
+  background: #f1f1f1;
+}
+
+/* ==== ALL LEVELS ==== */
+.levels-wrapper {
+  flex: 1 1 50%;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.levels-card {
+  background: linear-gradient(145deg, #ffffff, #f9f9f9);
+  border-radius: 16px;
+  padding: 25px 30px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.levels-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.levels-card h3 {
+  font-size: 22px;
+  margin-bottom: 18px;
+  font-weight: 700;
+  color: #333;
+  text-align: left;
+}
+
+/* ==== LEVEL ROW ==== */
+.level-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.level-row:hover {
+  background: #f7faff;
+  box-shadow: 0 3px 8px rgba(0, 123, 255, 0.1);
+}
+
+.level-row:last-child {
+  margin-bottom: 0;
+}
+
+/* ==== LEVEL INFO ==== */
+.level-info-block h4 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #222;
+}
+
+.level-description {
+  font-size: 13px;
+  color: #666;
+  margin: 6px 0 10px 0;
+  line-height: 1.4;
+}
+
+.level-meta {
+  font-size: 12.5px;
+  color: #777;
+  display: flex;
+  gap: 18px;
+}
+
+/* ==== ACTIONS ==== */
+.level-actions {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.lock {
+  color: #bbb;
+  font-size: 22px;
+}
+
+.trophy {
+  color: gold;
+  font-size: 24px;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.4));
+}
+
+.level-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.level-btn:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+
+.level-btn.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  color: #666;
+  transform: none;
+}
+
+/* ==== TEXT STATES ==== */
+.loading-text,
+.error-text {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 15px;
+}
+
+/* ==== RESPONSIVE DESIGN ==== */
+@media (max-width: 992px) {
+  .main-flex {
+    flex-direction: column;
+  }
+
+  .continue-card,
+  .levels-wrapper {
+    flex: 1 1 100%;
+  }
+
+  .continue-card {
+    text-align: center;
+  }
+
+  .start-btn {
+    align-self: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 15px;
+  }
+
+  .section h2 {
+    font-size: 20px;
+  }
+
+  .stat-card p {
+    font-size: 15px;
+  }
+
+  .continue-card h3 {
+    font-size: 18px;
+  }
+
+  .level-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .level-actions {
+    width: 100%;
+    text-align: left;
+  }
 }

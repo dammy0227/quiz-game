@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthProvider from "./context/AuthProvider";
 import PrivateRoute from "./components/PrivateRoute";
-import Sidebar from "./components/Layout/Sidebar";
+import Navbar from './components/Layout/Sidebar'
 
 // Pages
 import Home from "./pages/Home/Home";
@@ -17,7 +17,7 @@ import './App.css'
 const AuthenticatedLayout = ({ children }) => {
   return (
     <div className="layout">
-      <Sidebar />
+      <Navbar />
       <main className="content">{children}</main>
     </div>
   );
@@ -26,12 +26,12 @@ const AuthenticatedLayout = ({ children }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public front page */}
+      {/* Public pages */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Protected routes */}
+      {/* Protected pages */}
       <Route
         path="/game"
         element={

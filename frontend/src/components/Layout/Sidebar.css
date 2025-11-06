@@ -1,94 +1,92 @@
-.sidebar {
-  width: 220px;
-  height: 100vh;
-  background-color: #111827;
-  color: white;
-  position: fixed;
+.navbar {
+  background:white;
+  color: black;
+  padding: 12px 25px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  position: sticky;
   top: 0;
-  left: 0;
+  z-index: 1000;
+}
+
+.nav-container {
   display: flex;
-  flex-direction: column;
-  padding: 20px;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.sidebar-logo {
-  font-size: 22px;
-  font-weight: bold;
-  margin-bottom: 30px;
-  text-align: center;
-  color: #facc15;
+.nav-logo {
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
 }
 
-.sidebar-menu {
-  list-style: none;
-  padding: 0;
+.nav-links {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
-.sidebar-item {
-  margin: 15px 0;
-}
-
-.sidebar-item a,
-.sidebar-link-button {
+.nav-links a {
+  color: #f0f0f0;
   text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: #4da6ff;
+}
+
+.logout-btn {
+  background: #ff4b4b;
   color: white;
-  font-size: 16px;
-  display: block;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: 0.3s;
-  width: 100%;
-  text-align: left;
-  background: none;
   border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: #e13b3b;
+}
+
+/* === Mobile Menu === */
+.nav-toggle {
+  display: none;
+  font-size: 1.4rem;
   cursor: pointer;
 }
 
-.sidebar-item a:hover,
-.sidebar-link-button:hover {
-  background-color: #1f2937;
-  color: #facc15;
-}
-
-.active a {
-  background-color: #263a56;
-  color: #fff;
-}
-
-/* ===== Mobile Responsive ===== */
 @media (max-width: 768px) {
-  .sidebar {
+  .nav-links {
+    position: absolute;
+    top: 58px;
+    right: 0;
+    background: #0a2540;
+    flex-direction: column;
     width: 100%;
-    height: auto;
-    position: relative;
-    flex-direction: row;
-    padding: 10px 0;
-    overflow-x: auto;
-    white-space: nowrap;
+    text-align: center;
+    padding: 20px 0;
+    display: none;
   }
 
-  .sidebar-logo {
-    margin: 0 20px;
-    font-size: 18px;
-    flex-shrink: 0;
+  .nav-links.open {
+    display: flex;
   }
 
-  .sidebar-menu {
-    flex-direction: row;
-    margin: 0;
-    padding: 0 10px;
+  .nav-toggle {
+    display: block;
   }
 
-  .sidebar-item {
-    display: inline-block;
-    margin: 0 10px;
-  }
-
-  .sidebar-item a,
-  .sidebar-link-button {
-    display: inline-block;
-    padding: 8px 12px;
+  .nav-links a,
+  .logout-btn {
+    font-size: 16px;
   }
 }

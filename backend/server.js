@@ -9,7 +9,9 @@ import authRoutes from "./routes/authRoutes.js";
 import gameRoutes from "./routes/gameRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import levelRoutes from "./routes/levelRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +20,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+
+
 
 // Middleware
 app.use(cors({
@@ -38,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/levels", levelRoutes);
 
 // Error handling middleware
 app.use(notFound);

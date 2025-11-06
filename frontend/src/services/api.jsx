@@ -2,7 +2,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://quiz-game-e4ln.onrender.com/api", // ✅ use your deployed backend
+  // baseURL: "https://quiz-game-e4ln.onrender.com/api", // ✅ use your deployed backend
+    baseURL: "http://localhost:5000/api", 
   headers: { "Content-Type": "application/json" },
 });
 
