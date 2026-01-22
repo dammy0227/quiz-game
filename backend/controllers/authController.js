@@ -3,12 +3,11 @@ import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 import { env } from "../config/env.js";
 
-// Generate JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// @desc Register new user
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -29,7 +28,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// @desc Login user
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

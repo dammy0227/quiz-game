@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaShieldAlt,
   FaGamepad,
@@ -24,8 +24,34 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import { ShieldCheck, Users as LucideUsers, Zap } from "lucide-react";
-import { Link } from "react-router-dom"; // ✅ add this import
+import { Link } from "react-router-dom";
 import "./Home.css";
+
+const Counter = ({ target, duration = 2000 }) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const incrementTime = Math.max(Math.floor(duration / target), 1); // ensures no zero
+    const timer = setInterval(() => {
+      start += 1;
+      if (start >= target) {
+        start = target;
+        clearInterval(timer);
+      }
+      setCount(start);
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [target, duration]);
+
+  return (
+    <h2>
+      {count}
+      {target >= 1000 ? "+" : ""}
+    </h2>
+  );
+};
 
 const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,10 +74,14 @@ const Home = () => {
 
           <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
             <li>
-              <a href="#about" onClick={() => setMenuOpen(false)}>Home</a>
+              <a href="#about" onClick={() => setMenuOpen(false)}>
+                Home
+              </a>
             </li>
             <li>
-              <Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link>
+              <Link to="/login" onClick={() => setMenuOpen(false)}>
+                Login
+              </Link>
             </li>
           </ul>
         </nav>
@@ -81,7 +111,6 @@ const Home = () => {
           </p>
 
           <div className="cta-buttons">
-            {/* ✅ Updated Links */}
             <Link to="/Login" className="btn btn-primary">
               <FaPlay style={{ marginRight: "8px" }} />
               Start Learning →
@@ -101,7 +130,7 @@ const Home = () => {
             <div className="active-icon blue">
               <LucideUsers />
             </div>
-            <h2>10,000+</h2>
+            <Counter target={3000} duration={2000} />
             <p>Active Learners</p>
           </div>
 
@@ -109,7 +138,7 @@ const Home = () => {
             <div className="active-icon indigo">
               <ShieldCheck />
             </div>
-            <h2>50+</h2>
+            <Counter target={1000} duration={1500} />
             <p>Security Levels</p>
           </div>
 
@@ -117,7 +146,7 @@ const Home = () => {
             <div className="active-icon cyan">
               <Zap />
             </div>
-            <h2>200+</h2>
+            <Counter target={2000} duration={1800} />
             <p>Skills Mastered</p>
           </div>
         </div>
@@ -201,7 +230,6 @@ const Home = () => {
             skills through our interactive platform.
           </p>
 
-          {/* ✅ Updated Link */}
           <Link
             to="/Login"
             className="btn btn-primary"
@@ -245,20 +273,36 @@ const Home = () => {
           <div className="footer-section">
             <h3>Quick Links</h3>
             <ul className="footer-links">
-              <li><a href="#about">About</a></li>
-              <li><a href="#levels">Levels</a></li>
-              <li><a href="#leaderboard">Leaderboard</a></li>
-              <li><a href="#help">Help</a></li>
+              <li>
+                <a href="#about">About</a>
+              </li>
+              <li>
+                <a href="#levels">Levels</a>
+              </li>
+              <li>
+                <a href="#leaderboard">Leaderboard</a>
+              </li>
+              <li>
+                <a href="#help">Help</a>
+              </li>
             </ul>
           </div>
 
           <div className="footer-section">
             <h3>Resources</h3>
             <ul className="footer-links">
-              <li><a href="#documentation">Documentation</a></li>
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-              <li><a href="#contact">Contact</a></li>
+              <li>
+                <a href="#documentation">Documentation</a>
+              </li>
+              <li>
+                <a href="#privacy">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="#terms">Terms of Service</a>
+              </li>
+              <li>
+                <a href="#contact">Contact</a>
+              </li>
             </ul>
           </div>
         </div>
@@ -268,7 +312,8 @@ const Home = () => {
             © 2025 CyberSec Game. All rights reserved.
             <br />
             <span>
-              Made with <FaHeart className="heart" /> for cybersecurity education
+              Made with <FaHeart className="heart" /> for cybersecurity
+              education
             </span>
           </p>
         </div>

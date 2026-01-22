@@ -8,13 +8,11 @@ import Question from "../models/questionModel.js";
  */
 export const getRandomQuestions = async (difficulty, limit = 10) => {
   try {
-    // ✅ Use 'level' instead of 'difficulty'
     const allQuestions = await Question.find({ level: difficulty });
 
-    // If there are fewer than 'limit', just return all of them
+
     if (allQuestions.length <= limit) return allQuestions;
 
-    // Randomly shuffle and pick 'limit' number of questions
     const shuffled = allQuestions.sort(() => 0.5 - Math.random());
     return shuffled.slice(0, limit);
   } catch (error) {

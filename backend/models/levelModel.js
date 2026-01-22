@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const levelSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true }, // easy, intermediate, hard
-    label: { type: String, required: true }, // e.g. "Easy"
+    name: { type: String, required: true, unique: true }, 
+    label: { type: String, required: true }, 
     description: { type: String },
-    order: { type: Number, required: true }, // 1, 2, 3...
+    order: { type: Number, required: true }, 
     totalQuestions: { type: Number, default: 10 },
     rewardPoints: { type: Number, default: 50 },
   },

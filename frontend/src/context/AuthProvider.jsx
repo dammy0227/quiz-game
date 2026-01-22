@@ -3,12 +3,12 @@ import { AuthContext } from "./AuthContext";
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ new
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
-    setLoading(false); // ✅ finished loading
+    setLoading(false); 
   }, []);
 
   const login = (userData) => {
@@ -23,7 +23,7 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
   };
 
-  if (loading) return null; // ✅ render nothing until loaded
+  if (loading) return null; 
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

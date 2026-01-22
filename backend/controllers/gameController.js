@@ -2,9 +2,7 @@ import Game from "../models/gameModel.js";
 import Level from "../models/levelModel.js";
 import { getRandomQuestions } from "../utils/randomizer.js";
 
-/**
- * Start a new game or reset current level
- */
+
 export const startGame = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -65,9 +63,7 @@ export const startGame = async (req, res) => {
 };
 
 
-/**
- * Submit answer for current question
- */
+
 export const submitAnswer = async (req, res) => {
   try {
     const { gameId, answer } = req.body;
@@ -129,7 +125,7 @@ export const submitAnswer = async (req, res) => {
         response.nextLevel = nextLevel || null;
       }
 
-      game.isCompleted = passed && !getNextLevel(game.currentLevel); // mark fully completed if last level
+      game.isCompleted = passed && !getNextLevel(game.currentLevel); 
     }
 
     await game.save();
@@ -141,9 +137,7 @@ export const submitAnswer = async (req, res) => {
 };
 
 
-/**
- * Get the current active game
- */
+
 export const getActiveGame = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -180,9 +174,8 @@ export const getActiveGame = async (req, res) => {
   }
 };
 
-/**
- * Helper: get next level
- */
+
+
 const getNextLevel = async (currentLevel) => {
   const levels = await Level.find().sort({ order: 1 });
   const idx = levels.findIndex((lvl) => lvl.name === currentLevel);

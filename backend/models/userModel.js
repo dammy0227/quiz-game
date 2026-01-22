@@ -7,16 +7,14 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
-    // 🏆 Total cumulative score across all games
+
     totalScore: { type: Number, default: 0 },
 
-    // 💰 Optional: total amount earned (if used in your app)
     totalEarnings: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
@@ -24,7 +22,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Compare entered password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

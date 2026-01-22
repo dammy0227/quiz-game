@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -13,18 +12,13 @@ import levelRoutes from "./routes/levelRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 
-// Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
 connectDB();
 
 const app = express();
 
 
-
-
-// Middleware
 app.use(cors({
   origin: [
     "https://quiz-game-nu-five.vercel.app",
@@ -38,18 +32,16 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan("dev"));
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/game", gameRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/levels", levelRoutes);
 
-// Error handling middleware
+
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server
 const PORT = env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running in ${env.NODE_ENV} mode on port ${PORT}`);

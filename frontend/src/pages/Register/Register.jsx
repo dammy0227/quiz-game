@@ -11,15 +11,20 @@ const Register = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await register({ name, email, password });
-      navigate("/leaderboard"); // redirect to login after registration
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
-    }
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const data = await register({ name, email, password });
+
+    // 🔥 STORE TOKEN + USER
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data));
+
+    navigate("/leaderboard");
+  } catch (err) {
+    setError(err.response?.data?.message || "Registration failed");
+  }
+};
 
   return (
     <div className="auth-form-container">
