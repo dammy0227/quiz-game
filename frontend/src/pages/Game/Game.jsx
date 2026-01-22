@@ -30,7 +30,6 @@ const Game = () => {
     nextLevel: null,
   });
 
-  // --- Load audio ---
   const correctSound = new Audio("/clap.wav");
   const wrongSound = new Audio("/fail.wav");
   const levelCompleteSound = new Audio("/win.wav");
@@ -41,7 +40,6 @@ const Game = () => {
   levelCompleteSound.volume = 0.5;
   grandmasterSound.volume = 0.5;
 
-  // --- Load active game on mount ---
   useEffect(() => {
     const loadActiveGame = async () => {
       try {
@@ -55,23 +53,23 @@ const Game = () => {
           return;
         }
 
-        if (data?.gameId) {
-          const allQuestions = data.questions?.map((q) => ({
-            question: q.question || q.questionId?.question,
-            options: q.options || q.questionId?.options,
-            correctAnswer: q.correctAnswer || q.questionId?.correctAnswer,
+        if (data?.activeGame?.gameId) {
+          const allQuestions = data.activeGame.questions.map((q) => ({
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
             selectedAnswer: q.selectedAnswer || null,
-            explanation: q.explanation || q.questionId?.explanation || "",
-          })) || [];
+            explanation: q.explanation || "",
+          }));
 
-          setGameId(data.gameId);
+          setGameId(data.activeGame.gameId);
           setQuestions(allQuestions);
-          setCurrentIndex(data.currentQuestionIndex || 0);
-          setCurrentLevel(data.currentLevel);
-          setScore(data.score || 0);
+          setCurrentIndex(data.activeGame.currentQuestionIndex || 0);
+          setCurrentLevel(data.activeGame.currentLevel);
+          setScore(data.activeGame.score || 0);
           setGameStarted(true);
           setUnlockedLevels((prev) => [
-            ...new Set([...prev, ...(data.completedLevels || []), data.currentLevel]),
+            ...new Set([...prev, ...(data.activeGame.completedLevels || []), data.activeGame.currentLevel]),
           ]);
         }
       } catch (err) {
@@ -84,19 +82,18 @@ const Game = () => {
     loadActiveGame();
   }, []);
 
-  // --- Start or replay a level ---
   const initGame = async (level) => {
     setLoading(true);
     try {
       const data = await startGame({ level });
 
-      const qList = data.questions?.map((q) => ({
+      const qList = data.questions.map((q) => ({
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer,
         selectedAnswer: null,
         explanation: q.explanation || "",
-      })) || [];
+      }));
 
       setGameId(data.game?._id || data.gameId);
       setQuestions(qList);
@@ -110,7 +107,6 @@ const Game = () => {
       setExplanation("");
 
       setUnlockedLevels((prev) => [...new Set([...prev, ...(data.completedLevels || []), level])]);
-
     } catch (err) {
       console.error("Error starting game:", err);
       setMessage("Error starting game.");
@@ -119,14 +115,12 @@ const Game = () => {
     }
   };
 
-  // --- Automatically start level if query param exists ---
   useEffect(() => {
     if (levelQuery) {
       initGame(levelQuery);
     }
   }, [levelQuery]);
 
-  // --- Submit answer ---
   const handleAnswer = async (answer) => {
     if (!gameId || answer === undefined || answer === null) {
       setMessage("Cannot submit answer right now.");
@@ -140,14 +134,11 @@ const Game = () => {
       setScore(data.score);
 
       setQuestions((prev) =>
-        prev.map((q, idx) =>
-          idx === currentIndex ? { ...q, selectedAnswer: answer } : q
-        )
+        prev.map((q, idx) => (idx === currentIndex ? { ...q, selectedAnswer: answer } : q))
       );
 
       setMessage(data.correct ? "✅ Correct! +2 points" : "❌ Wrong answer");
 
-      // --- Play sound based on correctness ---
       if (data.correct) correctSound.play();
       else wrongSound.play();
 
@@ -164,21 +155,14 @@ const Game = () => {
         ]);
       }
 
-      // --- Level Finished: show badges ---
       if (data.levelFinished) {
-        const badges = {
-          easy: "🥉 Bronze Badge",
-          intermediate: "🥈 Silver Badge",
-          hard: "🥇 Gold Badge",
-        };
-
+        const badges = { easy: "🥉 Bronze Badge", intermediate: "🥈 Silver Badge", hard: "🥇 Gold Badge" };
         const isGrandmaster =
           unlockedLevels.includes("easy") &&
           unlockedLevels.includes("intermediate") &&
           unlockedLevels.includes("hard") &&
           currentLevel === "hard";
 
-        // Play level complete or fail sound
         if (data.levelPassed) {
           levelCompleteSound.play();
           if (isGrandmaster) grandmasterSound.play();
@@ -190,9 +174,7 @@ const Game = () => {
         setEndPopupData({
           success: data.levelPassed,
           totalScore: data.score,
-          message: data.levelPassed
-            ? `🎉 You earned the ${badges[currentLevel]}!`
-            : `❌ You scored ${data.score} points. Try again!`,
+          message: data.levelPassed ? `🎉 You earned the ${badges[currentLevel]}!` : `❌ You scored ${data.score} points. Try again!`,
           nextLevel: data.nextLevel,
           grandmaster: isGrandmaster,
           badge: badges[currentLevel],
@@ -217,7 +199,7 @@ const Game = () => {
   };
 
   const handleNext = () => {
-    const currentQ = questions?.[currentIndex];
+    const currentQ = questions[currentIndex];
     if (!currentQ || !currentQ.selectedAnswer) return;
 
     if (currentIndex === questions.length - 1) {
@@ -242,15 +224,12 @@ const Game = () => {
     window.location.href = "/leaderboard";
   };
 
-  // --- LEVEL SELECTION SCREEN ---
   if (!gameStarted && activeGameLoaded) {
     return (
       <div className="game-container">
         <h2>Cybersecurity Quiz Game</h2>
         {allCompleted ? (
-          <p className="completed-message">
-            🎉 You have completed all levels! You can replay any level below.
-          </p>
+          <p className="completed-message">🎉 You have completed all levels! You can replay any level below.</p>
         ) : (
           <p>Choose a level to begin:</p>
         )}
@@ -258,26 +237,16 @@ const Game = () => {
         <div className="level-select">
           <button onClick={() => initGame("easy")} className="level-btn">Easy</button>
           <button
-            onClick={() =>
-              unlockedLevels.includes("intermediate")
-                ? initGame("intermediate")
-                : alert("Complete Easy to unlock Intermediate!")
-            }
+            onClick={() => unlockedLevels.includes("intermediate") ? initGame("intermediate") : alert("Complete Easy to unlock Intermediate!")}
             className="level-btn"
           >Intermediate</button>
           <button
-            onClick={() =>
-              unlockedLevels.includes("hard")
-                ? initGame("hard")
-                : alert("Complete Intermediate to unlock Hard!")
-            }
+            onClick={() => unlockedLevels.includes("hard") ? initGame("hard") : alert("Complete Intermediate to unlock Hard!")}
             className="level-btn"
           >Hard</button>
         </div>
 
-        {unlockedLevels.length > 1 && (
-          <p className="unlocked-info">✅ Unlocked Levels: {unlockedLevels.join(", ")}</p>
-        )}
+        {unlockedLevels.length > 1 && <p className="unlocked-info">✅ Unlocked Levels: {unlockedLevels.join(", ")}</p>}
         {message && <p className="feedback">{message}</p>}
       </div>
     );
@@ -297,14 +266,10 @@ const Game = () => {
           <h3>{currentLevel.toUpperCase()} Level</h3>
           <p>Question {currentIndex + 1} / {questions.length}</p>
         </div>
-        <div className="score-info">
-          <strong>Score:</strong> {score}
-        </div>
+        <div className="score-info"><strong>Score:</strong> {score}</div>
       </div>
 
-      <div className="progress-bar">
-        <div className="progress" style={{ width: `${progress}%` }}></div>
-      </div>
+      <div className="progress-bar"><div className="progress" style={{ width: `${progress}%` }}></div></div>
 
       <QuestionCard
         question={currentQ.question}
@@ -315,26 +280,13 @@ const Game = () => {
         disabled={!gameId}
       />
 
-      {explanation && (
-        <div className="explanation">
-          💡 <strong>Explanation:</strong> {explanation}
-        </div>
-      )}
-
+      {explanation && <div className="explanation">💡 <strong>Explanation:</strong> {explanation}</div>}
       {message && <p className="feedback">{message}</p>}
 
       <div className="controls">
-        <button onClick={handlePrev} disabled={currentIndex === 0}>
-          <FaArrowLeft /> Previous
-        </button>
-        {currentQ.selectedAnswer && (
-          <button onClick={handleNext}>
-            Next <FaArrowRight />
-          </button>
-        )}
-        <button onClick={handleRetryLevel} className="retry-btn">
-          <FaRedo /> Retry Level
-        </button>
+        <button onClick={handlePrev} disabled={currentIndex === 0}><FaArrowLeft /> Previous</button>
+        {currentQ.selectedAnswer && <button onClick={handleNext}>Next <FaArrowRight /></button>}
+        <button onClick={handleRetryLevel} className="retry-btn"><FaRedo /> Retry Level</button>
       </div>
 
       {showEndPopup && (
@@ -344,38 +296,17 @@ const Game = () => {
               <>
                 <h2>🎉 Level Completed!</h2>
                 <p>{endPopupData.message}</p>
-
-                {/* Show per-level badge */}
-                {endPopupData.badge && (
-                  <div className="badge">{endPopupData.badge}</div>
-                )}
-
-                {/* Show Grandmaster badge if applicable */}
-                {endPopupData.grandmaster && (
-                  <div className="grandmaster-badge">
-                    🌟 Grandmaster Badge Achieved! 🌟
-                  </div>
-                )}
-
-                {endPopupData.nextLevel && (
-                  <button onClick={handleNextLevelFromPopup} className="next-btn">
-                    Go to {endPopupData.nextLevel.toUpperCase()} Level
-                  </button>
-                )}
-                <button onClick={handleDashboard} className="dashboard-btn">
-                  Back to Dashboard
-                </button>
+                {endPopupData.badge && <div className="badge">{endPopupData.badge}</div>}
+                {endPopupData.grandmaster && <div className="grandmaster-badge">🌟 Grandmaster Badge Achieved! 🌟</div>}
+                {endPopupData.nextLevel && <button onClick={handleNextLevelFromPopup} className="next-btn">Go to {endPopupData.nextLevel.toUpperCase()} Level</button>}
+                <button onClick={handleDashboard} className="dashboard-btn">Back to Dashboard</button>
               </>
             ) : (
               <>
                 <h2>❌ Level Failed</h2>
                 <p>{endPopupData.message}</p>
-                <button onClick={handleRetryLevel} className="retry-btn">
-                  Retry Level
-                </button>
-                <button onClick={handleDashboard} className="dashboard-btn">
-                  Back to Dashboard
-                </button>
+                <button onClick={handleRetryLevel} className="retry-btn">Retry Level</button>
+                <button onClick={handleDashboard} className="dashboard-btn">Back to Dashboard</button>
               </>
             )}
           </div>
