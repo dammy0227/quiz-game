@@ -30,14 +30,24 @@ const Leaderboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [userRes, gameRes, levelsRes] = await Promise.all([
-          getProfile(),
-          getActiveGame(),
-          getLevels(),
-        ]);
+        const userRes = await getProfile();
+        const levelsRes = await getLevels();
+
+        let gameRes = null;
+        try {
+          gameRes = await getActiveGame();
+        } catch (err) {
+          // Handle 404 (no active game) gracefully
+          if (err.response?.status === 404) {
+            console.log("No active game found, starting fresh.");
+          } else {
+            throw err;
+          }
+        }
+
         setUser(userRes);
-        setGameData(gameRes);
         setLevels(levelsRes);
+        setGameData(gameRes); // can be null if no active game
       } catch (err) {
         console.error("Dashboard load error:", err);
         setError("Unable to load profile or game data. Please log in again.");
@@ -45,6 +55,7 @@ const Leaderboard = () => {
         setLoading(false);
       }
     };
+
     fetchDashboardData();
   }, []);
 
@@ -58,12 +69,10 @@ const Leaderboard = () => {
   const totalLevels = levels.length || 3;
   const levelProgress = ((totalCompleted / totalLevels) * 100).toFixed(0);
 
-  // Navigate to Game page with level query (allows replay)
   const handleStartLevel = (levelName) => {
     navigate(`/game?level=${levelName}`);
   };
 
-  // Determine if level is unlocked
   const getUnlockedStatus = (level, index) => {
     if (index === 0) return true;
     const prevLevel = levels[index - 1];
@@ -73,6 +82,7 @@ const Leaderboard = () => {
   return (
     <>
       <div className="dashboard-container">
+        {/* Welcome Section */}
         <div className="welcome-section">
           <div className="section">
             <h2>Welcome Back, {user?.name || "Player"} 👋</h2>
